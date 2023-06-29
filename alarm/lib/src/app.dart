@@ -1,3 +1,5 @@
+import 'package:alarm/src/sample_feature/alarm_receiver.dart';
+import 'package:alarm/src/sample_feature/alarm_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -19,6 +21,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (pendingPayload != null) {
+      WidgetsBinding.instance?.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AlarmScreen(payload: pendingPayload),
+          ),
+        );
+        pendingPayload = null;
+      });
+    }
+
+    // Initialize the AlarmReceiver class
+    AlarmReceiver.init(context);
     // Make the status and navigation bar transparent
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

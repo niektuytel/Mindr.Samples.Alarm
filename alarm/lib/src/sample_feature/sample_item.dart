@@ -1,11 +1,18 @@
 import 'dart:ffi';
 
-/// A placeholder class that represents an entity or model.
 class AlarmItem {
-  AlarmItem(this.id, this.time, this.scheduledDays, this.isEnabled, this.sound,
-      this.vibrationChecked, this.syncWithMindr);
+  AlarmItem(
+    this.id,
+    this.time,
+    this.scheduledDays,
+    this.isEnabled,
+    this.sound,
+    this.vibrationChecked,
+    this.syncWithMindr,
+  );
 
-  String id;
+  int id;
+  String label = "test";
   DateTime time;
   List<int> scheduledDays;
   bool isEnabled;
@@ -14,46 +21,34 @@ class AlarmItem {
   bool syncWithMindr;
 
   bool isExpanded = false;
+
+  // Convert a AlarmItem into a Map. The keys must correspond to the names of the
+  // columns in the database.
+  Map<String, dynamic> toMap() {
+    return {
+      'time': time.toIso8601String(),
+      'scheduledDays':
+          scheduledDays.join(','), // Convert list to comma-separated string
+      'isEnabled': isEnabled ? 1 : 0,
+      'sound': sound,
+      'vibrationChecked': vibrationChecked ? 1 : 0,
+      'syncWithMindr': syncWithMindr ? 1 : 0,
+    };
+  }
+
+  // Create a AlarmItem from a Map.
+  AlarmItem.fromMap(Map<String, dynamic> map)
+      : id = map['id'],
+        time = DateTime.parse(map['time']),
+        scheduledDays =
+            map['scheduledDays'] == null || map['scheduledDays'].isEmpty
+                ? []
+                : (map['scheduledDays'] as String)
+                    .split(',')
+                    .map((item) => int.parse(item.toString()))
+                    .toList(),
+        isEnabled = map['isEnabled'] == 1,
+        sound = map['sound'],
+        vibrationChecked = map['vibrationChecked'] == 1,
+        syncWithMindr = map['syncWithMindr'] == 1;
 }
-
-// Sample test data:
-final List<AlarmItem> sampleData = [
-  AlarmItem("1", DateTime(2021, 10, 10, 10, 10), [1, 3, 5], true, 'default',
-      true, true),
-  AlarmItem("2", DateTime(2021, 10, 11, 10, 10), [1, 3, 5], true, 'default',
-      true, true),
-  AlarmItem("3", DateTime(2021, 10, 12, 10, 10), [1, 3, 5], true, 'default',
-      true, true),
-  AlarmItem("4", DateTime(2021, 10, 13, 10, 10), [1, 3, 5], false, 'default',
-      true, true),
-  AlarmItem("5", DateTime(2021, 10, 14, 10, 10), [1, 3, 5], false, 'default',
-      true, true),
-  AlarmItem("6", DateTime(2021, 10, 15, 10, 10), [1, 3, 5], true, 'default',
-      true, true),
-  AlarmItem("7", DateTime(2021, 10, 16, 10, 10), [1, 3, 5], true, 'default',
-      true, true),
-  AlarmItem("8", DateTime(2021, 10, 17, 10, 10), [1, 3, 5], false, 'default',
-      true, true),
-  AlarmItem("9", DateTime(2021, 10, 18, 10, 10), [1, 3, 5], false, 'default',
-      true, true),
-  AlarmItem("10", DateTime(2021, 10, 19, 10, 10), [1, 3, 5], false, 'default',
-      true, true),
-];
-
-// AlarmItem(1, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], true, true, true),
-// AlarmItem(2, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], true, true, true),
-// AlarmItem(3, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], true, true, true),
-// AlarmItem(4, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], true, true, true),
-// AlarmItem(5, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], true, true, true),
-// AlarmItem(6, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], true, true, true),
-// AlarmItem(7, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], true, true, true),
-// AlarmItem(8, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(9, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(10, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(11, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(12, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(13, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(14, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(15, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(16, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true),
-// AlarmItem(17, DateTime(2021, 10, 10, 10, 10), [DateTime(2021, 10, 10, 10, 10)], false, true, true), 

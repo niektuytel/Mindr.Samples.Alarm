@@ -3,20 +3,25 @@ import 'package:intl/intl.dart';
 import '../feedback/feedback_view.dart';
 import '../mindr/mindr_view.dart';
 import '../settings/settings_view.dart';
+import 'db_helper.dart';
 import 'sample_item.dart';
 import 'sample_item_details_view.dart';
 
 class SampleItemListView extends StatefulWidget {
   static const routeName = '/';
 
-  const SampleItemListView({
+  SampleItemListView({
     Key? key,
     List<AlarmItem>? items,
   })  : _items = items,
         super(key: key);
 
-  final List<AlarmItem>? _items;
-  List<AlarmItem> get items => _items ?? sampleData;
+  List<AlarmItem>? _items = [];
+
+  List<AlarmItem> get items => _items ?? [];
+  set items(List<AlarmItem> value) {
+    _items = value;
+  }
 
   @override
   _SampleItemListViewState createState() => _SampleItemListViewState();
@@ -29,6 +34,11 @@ class _SampleItemListViewState extends State<SampleItemListView> {
   @override
   void initState() {
     super.initState();
+    DBHelper().getAlarms().then((alarms) {
+      setState(() {
+        widget.items = alarms;
+      });
+    });
     _scrollController = ScrollController()..addListener(_scrollListener);
   }
 
@@ -58,8 +68,32 @@ class _SampleItemListViewState extends State<SampleItemListView> {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () {
-          // Add your action here
+        onPressed: () async {
+          TimeOfDay? selectedTime = await showTimePicker(
+            context: context,
+            initialTime: TimeOfDay.now(),
+          );
+          if (selectedTime != null) {
+            AlarmItem newAlarm = AlarmItem(
+              0, // Change to appropriate ID based on your requirements
+              DateTime(
+                DateTime.now().year,
+                DateTime.now().month,
+                DateTime.now().day,
+                selectedTime.hour,
+                selectedTime.minute,
+              ),
+              [], // Default days
+              true,
+              '', // Default sound
+              true, // Default vibrationChecked
+              true, // Default syncWithMindr
+            );
+            setState(() {
+              widget.items.add(newAlarm);
+            });
+            DBHelper().insert(newAlarm); // Insert new alarm into the database
+          }
         },
       ),
     );
@@ -114,14 +148,34 @@ class _SampleItemListViewState extends State<SampleItemListView> {
       ),
       child: ExpansionTile(
         clipBehavior: Clip.antiAliasWithSaveLayer,
-        title: Text(
-          DateFormat('h:mm a').format(item.time),
-          style: TextStyle(
-            fontWeight: item.isEnabled ? FontWeight.bold : FontWeight.normal,
-            fontSize: 50,
-            color: item.isEnabled
-                ? Colors.white
-                : const Color.fromARGB(255, 155, 155, 155),
+        title: GestureDetector(
+          onTap: () async {
+            TimeOfDay? selectedTime = await showTimePicker(
+              context: context,
+              initialTime: TimeOfDay.fromDateTime(item.time),
+            );
+            if (selectedTime != null) {
+              setState(() {
+                item.time = DateTime(
+                  item.time.year,
+                  item.time.month,
+                  item.time.day,
+                  selectedTime.hour,
+                  selectedTime.minute,
+                );
+              });
+              await DBHelper().update(item); // update in the database
+            }
+          },
+          child: Text(
+            DateFormat('h:mm a').format(item.time),
+            style: TextStyle(
+              fontWeight: item.isEnabled ? FontWeight.bold : FontWeight.normal,
+              fontSize: 50,
+              color: item.isEnabled
+                  ? Colors.white
+                  : const Color.fromARGB(255, 155, 155, 155),
+            ),
           ),
         ),
         subtitle: _buildSubtitle(item),
@@ -147,6 +201,7 @@ class _SampleItemListViewState extends State<SampleItemListView> {
           value: item.isEnabled,
           onChanged: (newValue) {
             setState(() => item.isEnabled = newValue);
+            DBHelper().update(item); // update in the database
           },
           activeColor: Colors.white,
         ),
@@ -163,10 +218,16 @@ class _SampleItemListViewState extends State<SampleItemListView> {
         children: [
           Row(children: [..._buildDaySelectors(item, dayNames)]),
           _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) {
-            setState(() => item.vibrationChecked = value!);
+            setState(() {
+              item.vibrationChecked = value!;
+              DBHelper().update(item); // update in the database
+            });
           }),
           _buildSwitchRow(item.syncWithMindr, 'Bind with Mindr', (value) {
-            setState(() => item.syncWithMindr = value!);
+            setState(() {
+              item.syncWithMindr = value!;
+              DBHelper().update(item); // update in the database
+            });
           }),
         ],
       ),
@@ -184,6 +245,7 @@ class _SampleItemListViewState extends State<SampleItemListView> {
             } else {
               item.scheduledDays.add(index + 1);
             }
+            DBHelper().update(item); // update in the database
           });
         },
         child: Container(
@@ -231,6 +293,7 @@ class _SampleItemListViewState extends State<SampleItemListView> {
   }
 
   String getFormattedScheduledDays(List<int> scheduledDays) {
+    scheduledDays.sort();
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     List<String> selectedDays = [];
 
