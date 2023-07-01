@@ -15,6 +15,7 @@ dependencies:
   sqflite: any
   path_provider: any
   get: ^4.1.4
+  slidable_button: any
   android_alarm_manager_plus: any
   flutter_local_notifications: any
   flutter_localizations:
