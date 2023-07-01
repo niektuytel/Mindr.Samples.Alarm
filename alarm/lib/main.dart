@@ -1,4 +1,5 @@
 import 'package:alarm/src/sample_feature/alarm_receiver.dart';
+import 'package:alarm/src/sample_feature/alarm_screen.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 
@@ -21,5 +22,11 @@ void main() async {
   // Run the app and pass in the SettingsController. The app listens to the
   // SettingsController for changes, then passes it further down to the
   // SettingsView.
-  runApp(MyApp(settingsController: settingsController));
+  runApp(
+    MaterialApp(
+      home: pendingPayload != null
+          ? AlarmScreen(payload: pendingPayload)
+          : MyApp(settingsController: settingsController),
+    ),
+  );
 }

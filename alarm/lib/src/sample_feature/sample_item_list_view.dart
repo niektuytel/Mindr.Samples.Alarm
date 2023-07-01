@@ -170,9 +170,9 @@ class _SampleItemListViewState extends State<SampleItemListView> {
           child: Text(
             DateFormat('h:mm a').format(item.time),
             style: TextStyle(
-              fontWeight: item.isEnabled ? FontWeight.bold : FontWeight.normal,
+              fontWeight: item.isActive ? FontWeight.bold : FontWeight.normal,
               fontSize: 50,
-              color: item.isEnabled
+              color: item.isActive
                   ? Colors.white
                   : const Color.fromARGB(255, 155, 155, 155),
             ),
@@ -198,9 +198,9 @@ class _SampleItemListViewState extends State<SampleItemListView> {
         Text(getFormattedScheduledDays(item.scheduledDays),
             style: const TextStyle(fontSize: 16, color: Colors.white)),
         Switch(
-          value: item.isEnabled,
+          value: item.isActive,
           onChanged: (newValue) {
-            setState(() => item.isEnabled = newValue);
+            setState(() => item.isActive = newValue);
             DBHelper().update(item); // update in the database
           },
           activeColor: Colors.white,

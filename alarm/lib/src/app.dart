@@ -21,18 +21,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (pendingPayload != null) {
-      WidgetsBinding.instance?.addPostFrameCallback((_) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AlarmScreen(payload: pendingPayload),
-          ),
-        );
-        pendingPayload = null;
-      });
-    }
-
     // Initialize the AlarmReceiver class
     AlarmReceiver.init(context);
     // Make the status and navigation bar transparent

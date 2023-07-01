@@ -1,12 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-<uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND"/>
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND"/> -->
 
-<!-- For apps with targetSDK=31 (Android 12) -->
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <!-- For apps with targetSDK=31 (Android 12) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_RECURRING_ALARM"/>
 
-<!-- For custom alarm sounds if wanted -->
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!-- For custom alarm sounds if wanted -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+
+
 
 
     <application

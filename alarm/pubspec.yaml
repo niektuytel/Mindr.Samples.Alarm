@@ -14,6 +14,7 @@ dependencies:
     sdk: flutter
   sqflite: any
   path_provider: any
+  get: ^4.1.4
   android_alarm_manager_plus: any
   flutter_local_notifications: any
   flutter_localizations:
