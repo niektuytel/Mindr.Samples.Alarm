@@ -1,5 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slidable_button/slidable_button.dart';
+
+import 'alarm_receiver.dart';
+import 'db_helper.dart';
 
 class AlarmScreen extends StatefulWidget {
   final String? payload;
@@ -34,6 +40,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Map<String, dynamic> payload = jsonDecode(widget.payload!);
+    int alarmId = payload['alarmId'];
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
@@ -67,7 +76,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                         .secondary
                         .withOpacity(0.5),
                     buttonColor: Theme.of(context).primaryColor,
-                    dismissible: false,
+                    dismissible: true,
                     label: const Center(child: Text('Slide Me')),
                     child: const Padding(
                       padding: EdgeInsets.all(8.0),
@@ -82,11 +91,21 @@ class _AlarmScreenState extends State<AlarmScreen> {
                     ),
                     onChanged: (position) {
                       setState(() {
-                        if (position == SlidableButtonPosition.end) {
-                          // result = 'Button is at the right';
-                        } else {
-                          // result = 'Button is on the left';
-                        }
+                        // SharedPreferences prefs =
+                        //     SharedPreferences.getInstance()..getInstance().then((value) => null);
+
+                        // if (position == SlidableButtonPosition.end ||
+                        //     position == SlidableButtonPosition.start) {
+                        //   // Cancel notifications.
+                        //   await AlarmReceiver.showMissedNotification(alarmId);
+
+                        //   // Delete the alarm from the database.
+                        //   DBHelper dbHelper = DBHelper();
+                        //   await dbHelper.delete(alarmId);
+
+                        //   // Remove payload from shared preferences.
+                        //   await prefs.remove('pendingPayload');
+                        // }
                       });
                     },
                   ),
@@ -94,28 +113,6 @@ class _AlarmScreenState extends State<AlarmScreen> {
               ),
             ),
           ),
-          //   SliderTheme(
-          //     data: SliderThemeData(
-          //       trackHeight: 4.0,
-          //       thumbColor: Colors.blue,
-          //       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 20.0),
-          //       overlayShape: RoundSliderOverlayShape(overlayRadius: 30.0),
-          //     ),
-          //     child: Slider(
-          //       value: _dragValue,
-          //       onChanged: (newValue) {
-          //         setState(() {
-          //           _dragValue = newValue;
-          //         });
-          //       },
-          //       onChangeEnd: _onDragEnd,
-          //       min: -1.0,
-          //       max: 1.0,
-          //       divisions: 2,
-          //       label: _dragValue < 0 ? 'Snooze' : 'Stop',
-          //       activeColor: _dragValue < 0 ? Colors.blue : Colors.red,
-          //     ),
-          //   ),
         ],
       ),
     );

@@ -69,18 +69,17 @@ class DBHelper {
     int res = await dbClient.insert("alarm", alarm.toMap());
 
     if (alarm.isActive) {
-      // upcoming alarm notification
-      DateTime preAlarmTime = alarm.time.subtract(Duration(hours: 2));
-      await AndroidAlarmManager.oneShotAt(
-          preAlarmTime, alarm.id * 1234, AlarmReceiver.showUpcomingNotification,
-          exact: true,
-          wakeup: true,
-          rescheduleOnReboot: true,
-          allowWhileIdle: true);
+      // // upcoming alarm notification
+      // DateTime preAlarmTime = alarm.time.subtract(Duration(hours: 2));
+      // await AndroidAlarmManager.oneShotAt(
+      //     preAlarmTime, alarm.id * 1234, AlarmReceiver.showUpcomingNotification,
+      //     exact: true,
+      //     wakeup: true,
+      //     rescheduleOnReboot: true,
+      //     allowWhileIdle: true);
 
       // alarm notification
-      // DateTime alarmTime = DateTime.now().add(Duration(seconds: 10));
-      DateTime alarmTime = alarm.time;
+      DateTime alarmTime = DateTime.now(); //  alarm.time;
       await AndroidAlarmManager.oneShotAt(
           alarmTime, alarm.id, AlarmReceiver.showNotification,
           exact: true,

@@ -5,12 +5,14 @@ import 'package:alarm/src/sample_feature/sample_item.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'alarm_screen.dart';
 import 'package:intl/intl.dart';
 import 'db_helper.dart';
 
-String? pendingPayload; // Declare a global variable to hold the pending payload
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 // This must be a top-level function, outside of any class.
 @pragma('vm:entry-point')
@@ -42,7 +44,8 @@ void notificationHandler(NotificationResponse response) async {
   }
 
   if (type == 'showNotification' || type == 'showSnoozedNotification') {
-    pendingPayload = response.payload;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pendingPayload', response.payload!);
 
     // This is needed to show the AlarmScreen when the app is in the foreground
     runApp(
@@ -54,9 +57,6 @@ void notificationHandler(NotificationResponse response) async {
 }
 
 class AlarmReceiver {
-  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
   static void init(BuildContext context) async {
     final AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -117,41 +117,6 @@ class AlarmReceiver {
         payload: jsonEncode(payloadData));
   }
 
-// static Future<void> showFullScreenNotification(
-//       Alarm alarm, tz.TZDateTime date) async {
-
-//     const int insistentFlag = 4;
-
-//     final Int64List vibrationPattern = Int64List(4);
-//     vibrationPattern[0] = 0;
-//     vibrationPattern[1] = 4000;
-//     vibrationPattern[2] = 4000;
-//     vibrationPattern[3] = 4000;
-
-//     AndroidNotificationDetails androidPlatformChannelSpecifics =
-//     AndroidNotificationDetails(
-//       alarm.id.toString(),
-//       'scheduled_alarm_channel',
-//       channelDescription: 'scheduled_alarm',
-//       priority: Priority.high,
-//       importance: Importance.high,
-//       additionalFlags: Int32List.fromList(<int>[insistentFlag]),
-//       playSound: true,
-//       audioAttributesUsage: AudioAttributesUsage.alarm,
-//       vibrationPattern: vibrationPattern,
-//     );
-
-//     NotificationDetails details =
-//     NotificationDetails(android: androidPlatformChannelSpecifics);
-
-//     await flutterLocalNotificationsPlugin..zonedSchedule(
-//       ...
-//       date,
-//       androidAllowWhileIdle: true,
-//       ...
-//     );
-//   }
-
   static Future<void> showNotification(int id) async {
     DBHelper dbHelper = DBHelper();
     AlarmItem? alarmItem = await dbHelper.getAlarm(id);
@@ -165,33 +130,33 @@ class AlarmReceiver {
     // cancel the upcoming alarm notification
     await flutterLocalNotificationsPlugin.cancel(alarmItem.id * 1234);
 
-    const int insistentFlag = 4;
+    // 25 min of vibration
+    final Int64List longVibrationPattern = Int64List(376);
+    if (alarmItem.vibrationChecked) {
+      for (var i = 0; i < 376; i += 2) {
+        longVibrationPattern[i] = 4000; // vibrate
+        longVibrationPattern[i + 1] = 4000; // pause
+      }
+    }
 
-    final Int64List vibrationPattern = Int64List(4);
-    vibrationPattern[0] = 0;
-    vibrationPattern[1] = 4000;
-    vibrationPattern[2] = 4000;
-    vibrationPattern[3] = 4000;
-
-    var androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(alarmItem.id.toString(), 'Alarm',
-            // importance: Importance.high,
-            // priority: Priority.max,
-            // showWhen: true,
-            // ongoing: true, // Makes the notification persistent.
-            // playSound: true, // to play sound when the notification shows
-            // sound: RawResourceAndroidNotificationSound('soft_alarm.mp3'),
-            styleInformation: DefaultStyleInformation(true, true),
-            actions: <AndroidNotificationAction>[
-              AndroidNotificationAction('snooze', 'Snooze', icon: null),
-              AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
-            ],
-            priority: Priority.high,
-            importance: Importance.high,
-            additionalFlags: Int32List.fromList(<int>[insistentFlag]),
-            playSound: true,
-            audioAttributesUsage: AudioAttributesUsage.alarm,
-            vibrationPattern: vibrationPattern);
+    // Setup your custom sound here.
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      alarmItem.id.toString(),
+      'Alarm',
+      priority: Priority.high,
+      importance: Importance.high,
+      sound: RawResourceAndroidNotificationSound('argon'),
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      vibrationPattern: longVibrationPattern,
+      styleInformation: DefaultStyleInformation(true, true),
+      fullScreenIntent: true,
+      autoCancel:
+          false, // Prevents the notification from being dismissed when user taps on it.
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction('snooze', 'Snooze', icon: null),
+        AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
+      ],
+    );
 
     var platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -210,14 +175,6 @@ class AlarmReceiver {
     await flutterLocalNotificationsPlugin.show(
         id, 'Alarm', body, platformChannelSpecifics,
         payload: jsonEncode(payloadData));
-
-    // // This is needed to show the AlarmScreen when the app is in the foreground
-    // pendingPayload = jsonEncode(payloadData);
-    // runApp(
-    //   MaterialApp(
-    //     home: AlarmScreen(payload: jsonEncode(payloadData)),
-    //   ),
-    // );
   }
 
   static Future<void> showSnoozedNotification(int id) async {
@@ -237,6 +194,8 @@ class AlarmReceiver {
       showWhen: true,
       ongoing: true, // to play sound when the notification shows
       styleInformation: DefaultStyleInformation(true, true),
+      autoCancel:
+          false, // Prevents the notification from being dismissed when user taps on it.
       actions: <AndroidNotificationAction>[
         AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
       ],
