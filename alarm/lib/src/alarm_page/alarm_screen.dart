@@ -4,13 +4,31 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slidable_button/slidable_button.dart';
 
-import 'alarm_receiver.dart';
-import 'db_helper.dart';
+import 'alarm_notifications.dart';
+import '../db_helper.dart';
+
+// class HomePage extends StatefulWidget {
+//   const HomePage(
+//     this.notificationAppLaunchDetails, {
+//     Key? key,
+//   }) : super(key: key);
+
+//   static const String routeName = '/';
+
+//   final NotificationAppLaunchDetails? notificationAppLaunchDetails;
+
+//   bool get didNotificationLaunchApp =>
+//       notificationAppLaunchDetails?.didNotificationLaunchApp ?? false;
+
+//   @override
+//   _HomePageState createState() => _HomePageState();
+// }
 
 class AlarmScreen extends StatefulWidget {
   final String? payload;
 
   const AlarmScreen({Key? key, this.payload}) : super(key: key);
+  static const String routeName = '/alarmScreen';
 
   @override
   _AlarmScreenState createState() => _AlarmScreenState();
@@ -40,8 +58,10 @@ class _AlarmScreenState extends State<AlarmScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Map<String, dynamic> payload = jsonDecode(widget.payload!);
-    int alarmId = payload['alarmId'];
+    Map<String, dynamic> payload =
+        new Map<String, dynamic>(); // jsonDecode(widget.payload!);
+    int alarmId = 123;
+    // payload['alarmId'];
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -94,7 +114,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
                         // SharedPreferences prefs =
                         //     SharedPreferences.getInstance()..getInstance().then((value) => null);
 
-                        // if (position == SlidableButtonPosition.end ||
+                        if (position == SlidableButtonPosition.end) {
+                          Navigator.pop(context);
+                        }
                         //     position == SlidableButtonPosition.start) {
                         //   // Cancel notifications.
                         //   await AlarmReceiver.showMissedNotification(alarmId);
@@ -116,5 +138,12 @@ class _AlarmScreenState extends State<AlarmScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // didReceiveLocalNotificationStream.close();
+    // selectNotificationStream.close();
+    super.dispose();
   }
 }

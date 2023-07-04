@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
-import '../feedback/feedback_view.dart';
-import '../mindr/mindr_view.dart';
-import '../settings/settings_view.dart';
-import 'db_helper.dart';
-import 'sample_item.dart';
-import 'sample_item_details_view.dart';
+import '../mindr_page/mindr_view.dart';
+import 'alarm_notifications.dart';
+import '../db_helper.dart';
+import 'alarm_item.dart';
 
-class SampleItemListView extends StatefulWidget {
+class AlarmListPage extends StatefulWidget {
   static const routeName = '/';
 
-  SampleItemListView({
-    Key? key,
-    List<AlarmItem>? items,
-  })  : _items = items,
+  final NotificationAppLaunchDetails? notificationAppLaunchDetails;
+  bool get didNotificationLaunchApp =>
+      notificationAppLaunchDetails?.didNotificationLaunchApp ?? false;
+
+  AlarmListPage(NotificationAppLaunchDetails? appLaunchDetails,
+      {Key? key, List<AlarmItem>? items})
+      : _items = items,
+        notificationAppLaunchDetails = appLaunchDetails,
         super(key: key);
 
   List<AlarmItem>? _items = [];
@@ -24,10 +27,10 @@ class SampleItemListView extends StatefulWidget {
   }
 
   @override
-  _SampleItemListViewState createState() => _SampleItemListViewState();
+  _AlarmListPageState createState() => _AlarmListPageState();
 }
 
-class _SampleItemListViewState extends State<SampleItemListView> {
+class _AlarmListPageState extends State<AlarmListPage> {
   late final ScrollController _scrollController;
   Color _appBarColor = Colors.transparent;
 
@@ -51,9 +54,11 @@ class _SampleItemListViewState extends State<SampleItemListView> {
 
   @override
   Widget build(BuildContext context) {
+    AlarmReceiver.init(context);
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
 
     return Scaffold(
+      backgroundColor: Colors.black,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -116,9 +121,9 @@ class _SampleItemListViewState extends State<SampleItemListView> {
         if (value == 0) {
           Navigator.restorablePushNamed(context, MindrView.routeName);
         } else if (value == 1) {
-          Navigator.restorablePushNamed(context, FeedbackView.routeName);
+          //TODO: Navigator.restorablePushNamed(context, FeedbackView.routeName);
         } else if (value == 2) {
-          Navigator.restorablePushNamed(context, SettingsView.routeName);
+          //TODO: Navigator.restorablePushNamed(context, SettingsView.routeName);
         }
       },
       itemBuilder: (context) => const [

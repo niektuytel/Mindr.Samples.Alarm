@@ -1,39 +1,56 @@
+import 'dart:io';
 import 'dart:isolate';
 
-import 'package:alarm/src/sample_feature/alarm_receiver.dart';
-import 'package:alarm/src/sample_feature/alarm_screen.dart';
+import 'package:alarm/src/alarm_page/alarm_notifications.dart';
+import 'package:alarm/src/alarm_page/alarm_screen.dart';
+import 'package:alarm/src/alarm_page/alarm_list_page.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'src/app.dart';
-import 'src/settings/settings_controller.dart';
-import 'src/settings/settings_service.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+String? selectedNotificationPayload;
+Future<void> _configureLocalTimeZone() async {
+  if (kIsWeb || Platform.isLinux) {
+    return;
+  }
+  tz.initializeTimeZones();
+  final String? timeZoneName = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(timeZoneName!));
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AndroidAlarmManager.initialize();
+  await _configureLocalTimeZone();
 
-  // Load the payload from shared preferences
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? payload = prefs.getString('pendingPayload');
+  final NotificationAppLaunchDetails? notificationAppLaunchDetails = !kIsWeb &&
+          Platform.isLinux
+      ? null
+      : await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
 
-  // Set up the SettingsController, which will glue user settings to multiple
-  // Flutter Widgets.
-  final settingsController = SettingsController(SettingsService());
+  // Load the payload
+  String initialRoute = AlarmListPage.routeName;
+  if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
+    selectedNotificationPayload =
+        notificationAppLaunchDetails!.notificationResponse?.payload;
+    initialRoute = AlarmScreen.routeName;
+  }
 
-  // Load the user's preferred theme while the splash screen is displayed.
-  // This prevents a sudden theme change when the app is first displayed.
-  await settingsController.loadSettings();
-
-  // Run the app and pass in the SettingsController. The app listens to the
-  // SettingsController for changes, then passes it further down to the
-  // SettingsView.
   runApp(
     MaterialApp(
-      home: payload != null
-          ? AlarmScreen(payload: payload)
-          : MyApp(settingsController: settingsController),
+      initialRoute: initialRoute,
+      routes: <String, WidgetBuilder>{
+        AlarmListPage.routeName: (_) =>
+            AlarmListPage(notificationAppLaunchDetails),
+        AlarmScreen.routeName: (_) =>
+            AlarmScreen(payload: selectedNotificationPayload)
+      },
     ),
   );
 }
@@ -44,6 +61,7 @@ void main() async {
 // // ignore: unnecessary_import
 // import 'dart:typed_data';
 
+// import 'package:alarm/src/sample_feature/alarm_screen.dart';
 // import 'package:device_info_plus/device_info_plus.dart';
 // import 'package:flutter/cupertino.dart';
 // import 'package:flutter/foundation.dart';
@@ -135,7 +153,7 @@ void main() async {
 //   if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
 //     selectedNotificationPayload =
 //         notificationAppLaunchDetails!.notificationResponse?.payload;
-//     initialRoute = SecondPage.routeName;
+//     initialRoute = AlarmScreen.routeName;
 //   }
 
 //   const AndroidInitializationSettings initializationSettingsAndroid =
@@ -237,7 +255,8 @@ void main() async {
 //       initialRoute: initialRoute,
 //       routes: <String, WidgetBuilder>{
 //         HomePage.routeName: (_) => HomePage(notificationAppLaunchDetails),
-//         SecondPage.routeName: (_) => SecondPage(selectedNotificationPayload)
+//         AlarmScreen.routeName: (_) =>
+//             AlarmScreen(payload: selectedNotificationPayload)
 //       },
 //     ),
 //   );
@@ -368,7 +387,7 @@ void main() async {
 //                 await Navigator.of(context).push(
 //                   MaterialPageRoute<void>(
 //                     builder: (BuildContext context) =>
-//                         SecondPage(receivedNotification.payload),
+//                         AlarmScreen(payload: receivedNotification.payload),
 //                   ),
 //                 );
 //               },
@@ -383,7 +402,7 @@ void main() async {
 //   void _configureSelectNotificationSubject() {
 //     selectNotificationStream.stream.listen((String? payload) async {
 //       await Navigator.of(context).push(MaterialPageRoute<void>(
-//         builder: (BuildContext context) => SecondPage(payload),
+//         builder: (BuildContext context) => AlarmScreen(payload: payload),
 //       ));
 //     });
 //   }
@@ -3040,51 +3059,6 @@ void main() async {
 //         .resolvePlatformSpecificImplementation<
 //             LinuxFlutterLocalNotificationsPlugin>()!
 //         .getCapabilities();
-
-// class SecondPage extends StatefulWidget {
-//   const SecondPage(
-//     this.payload, {
-//     Key? key,
-//   }) : super(key: key);
-
-//   static const String routeName = '/secondPage';
-
-//   final String? payload;
-
-//   @override
-//   State<StatefulWidget> createState() => SecondPageState();
-// }
-
-// class SecondPageState extends State<SecondPage> {
-//   String? _payload;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _payload = widget.payload;
-//   }
-
-//   @override
-//   Widget build(BuildContext context) => Scaffold(
-//         appBar: AppBar(
-//           title: const Text('Second Screen'),
-//         ),
-//         body: Center(
-//           child: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             children: <Widget>[
-//               Text('payload ${_payload ?? ''}'),
-//               ElevatedButton(
-//                 onPressed: () {
-//                   Navigator.pop(context);
-//                 },
-//                 child: const Text('Go back!'),
-//               ),
-//             ],
-//           ),
-//         ),
-//       );
-// }
 
 // class _InfoValueString extends StatelessWidget {
 //   const _InfoValueString({

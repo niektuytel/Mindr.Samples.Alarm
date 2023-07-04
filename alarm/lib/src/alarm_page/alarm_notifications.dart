@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:alarm/src/sample_feature/sample_item.dart';
+import 'package:alarm/src/alarm_page/alarm_item.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'alarm_screen.dart';
 import 'package:intl/intl.dart';
-import 'db_helper.dart';
+import '../db_helper.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -116,6 +116,48 @@ class AlarmReceiver {
         id, 'Upcoming alarm', body, platformChannelSpecifics,
         payload: jsonEncode(payloadData));
   }
+
+  // Future<void> _showFullScreenNotification() async {
+  //   await showDialog(
+  //     context: context,
+  //     builder: (_) => AlertDialog(
+  //       title: const Text('Turn off your screen'),
+  //       content: const Text(
+  //           'to see the full-screen intent in 5 seconds, press OK and TURN '
+  //           'OFF your screen'),
+  //       actions: <Widget>[
+  //         TextButton(
+  //           onPressed: () {
+  //             Navigator.pop(context);
+  //           },
+  //           child: const Text('Cancel'),
+  //         ),
+  //         TextButton(
+  //           onPressed: () async {
+  //             await flutterLocalNotificationsPlugin.zonedSchedule(
+  //                 0,
+  //                 'scheduled title',
+  //                 'scheduled body',
+  //                 tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
+  //                 const NotificationDetails(
+  //                     android: AndroidNotificationDetails(
+  //                         'full screen channel id', 'full screen channel name',
+  //                         channelDescription: 'full screen channel description',
+  //                         priority: Priority.high,
+  //                         importance: Importance.high,
+  //                         fullScreenIntent: true)),
+  //                 androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+  //                 uiLocalNotificationDateInterpretation:
+  //                     UILocalNotificationDateInterpretation.absoluteTime);
+
+  //             Navigator.pop(context);
+  //           },
+  //           child: const Text('OK'),
+  //         )
+  //       ],
+  //     ),
+  //   );
+  // }
 
   static Future<void> showNotification(int id) async {
     DBHelper dbHelper = DBHelper();
