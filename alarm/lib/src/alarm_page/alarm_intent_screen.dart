@@ -87,7 +87,6 @@ class _AlarmScreenState extends State<AlarmScreen> {
                   const Text('Slide this button to left or right.'),
                   const SizedBox(height: 64.0),
                   HorizontalSlidableButton(
-                    initialPosition: SlidableButtonPosition.center,
                     height: MediaQuery.of(context).size.height / 10,
                     width: MediaQuery.of(context).size.width / 1.25,
                     buttonWidth: MediaQuery.of(context).size.width / 5,
@@ -103,9 +102,10 @@ class _AlarmScreenState extends State<AlarmScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Snooze'),
-                          Text('Drag Me'),
-                          Text('Stop'),
+                          Text('Stop',
+                              style: TextStyle(
+                                  fontSize: 20.0, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center),
                         ],
                       ),
                     ),
@@ -130,6 +130,17 @@ class _AlarmScreenState extends State<AlarmScreen> {
                         // }
                       });
                     },
+                  ),
+                  SizedBox(height: 20), // add a bit of spacing
+                  ElevatedButton(
+                    onPressed: () {
+                      print("Snooze button pressed");
+                    },
+                    child: Text('Snooze'),
+                    style: ElevatedButton.styleFrom(
+                      primary: Colors.grey, // background
+                      onPrimary: Colors.white, // foreground
+                    ),
                   ),
                 ],
               ),

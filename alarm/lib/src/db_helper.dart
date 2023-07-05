@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:alarm/src/alarm_page/alarm_item.dart';
@@ -85,6 +86,7 @@ class DBHelper {
       //     allowWhileIdle: true);
 
       // alarm notification
+
       // 25 min of vibration
       final Int64List longVibrationPattern = Int64List(376);
       if (alarm.vibrationChecked) {
@@ -100,7 +102,10 @@ class DBHelper {
         importance: Importance.high,
         sound: RawResourceAndroidNotificationSound('argon'),
         audioAttributesUsage: AudioAttributesUsage.alarm,
+        enableVibration: alarm.vibrationChecked,
         vibrationPattern: longVibrationPattern,
+        // ongoing: true,
+        visibility: NotificationVisibility.public,
         styleInformation: DefaultStyleInformation(true, true),
         fullScreenIntent: true,
         autoCancel:
@@ -110,25 +115,34 @@ class DBHelper {
           AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
         ],
       );
-
       var platformChannelSpecifics = NotificationDetails(
         android: androidPlatformChannelSpecifics,
       );
 
-      tz.initializeTimeZones();
       final String? timeZoneName = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(timeZoneName!));
 
+      String body = alarm.label.isEmpty
+          ? AlarmReceiver.formatDateTime(alarm.time)
+          : '${AlarmReceiver.formatDateTime(alarm.time)} - ${alarm.label}';
+
+      // create the payload
+      Map<String, dynamic> payloadData = {
+        'alarmId': alarm.id,
+        'type': 'showNotification',
+      };
+
       // DateTime alarmTime = DateTime.now().add(const Duration(seconds: 5)); //  alarm.time;
       await flutterLocalNotificationsPlugin.zonedSchedule(
-          0,
-          'scheduled title',
-          'scheduled body',
+          alarm.id,
+          'Alarm',
+          body,
           tz.TZDateTime.now(tz.local).add(const Duration(seconds: 20)),
           platformChannelSpecifics,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime);
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: jsonEncode(payloadData));
 
       // Navigator.pop(context);
 
@@ -143,66 +157,6 @@ class DBHelper {
 
     return res;
   }
-
-  // Future<void> showNotification(int id) async {
-  //   DBHelper dbHelper = DBHelper();
-  //   AlarmItem? alarmItem = await dbHelper.getAlarm(id);
-
-  //   if (alarmItem == null) {
-  //     return;
-  //   }
-
-  //   print('Alarm triggered!');
-
-  //   // cancel the upcoming alarm notification
-  //   await flutterLocalNotificationsPlugin.cancel(alarmItem.id * 1234);
-
-  //   // 25 min of vibration
-  //   final Int64List longVibrationPattern = Int64List(376);
-  //   if (alarmItem.vibrationChecked) {
-  //     for (var i = 0; i < 376; i += 2) {
-  //       longVibrationPattern[i] = 4000; // vibrate
-  //       longVibrationPattern[i + 1] = 4000; // pause
-  //     }
-  //   }
-
-  //   // Setup your custom sound here.
-  //   var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-  //     alarmItem.id.toString(),
-  //     'Alarm',
-  //     priority: Priority.high,
-  //     importance: Importance.high,
-  //     sound: RawResourceAndroidNotificationSound('argon'),
-  //     audioAttributesUsage: AudioAttributesUsage.alarm,
-  //     vibrationPattern: longVibrationPattern,
-  //     styleInformation: DefaultStyleInformation(true, true),
-  //     fullScreenIntent: true,
-  //     autoCancel:
-  //         false, // Prevents the notification from being dismissed when user taps on it.
-  //     actions: <AndroidNotificationAction>[
-  //       AndroidNotificationAction('snooze', 'Snooze', icon: null),
-  //       AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
-  //     ],
-  //   );
-
-  //   var platformChannelSpecifics = NotificationDetails(
-  //     android: androidPlatformChannelSpecifics,
-  //   );
-
-  //   String body = alarmItem.label.isEmpty
-  //       ? formatDateTime(alarmItem.time)
-  //       : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
-
-  //   // create the payload
-  //   Map<String, dynamic> payloadData = {
-  //     'alarmId': alarmItem.id,
-  //     'type': 'showNotification',
-  //   };
-
-  //   await flutterLocalNotificationsPlugin.show(
-  //       id, 'Alarm', body, platformChannelSpecifics,
-  //       payload: jsonEncode(payloadData));
-  // }
 
   Future<int> update(AlarmItem alarm) async {
     var dbClient = await db;

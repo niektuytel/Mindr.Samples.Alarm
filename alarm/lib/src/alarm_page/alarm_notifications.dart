@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'alarm_screen.dart';
+import 'alarm_intent_screen.dart';
 import 'package:intl/intl.dart';
 import '../db_helper.dart';
 

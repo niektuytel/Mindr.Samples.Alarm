@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:alarm/src/alarm_page/alarm_notifications.dart';
-import 'package:alarm/src/alarm_page/alarm_screen.dart';
-import 'package:alarm/src/alarm_page/alarm_list_page.dart';
+import 'package:alarm/src/alarm_page/alarm_intent_screen.dart';
+import 'package:alarm/src/alarm_page/alarm_page.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +41,11 @@ void main() async {
         notificationAppLaunchDetails!.notificationResponse?.payload;
     initialRoute = AlarmScreen.routeName;
   }
+
+  // get the alarm id from shared preferences
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? pendingPayload = prefs.getString('pendingPayload');
+  print(pendingPayload)
 
   runApp(
     MaterialApp(
