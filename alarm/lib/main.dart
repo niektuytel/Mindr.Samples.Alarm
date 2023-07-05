@@ -34,18 +34,21 @@ void main() async {
       ? null
       : await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
 
+  // get the alarm id from shared preferences
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? pendingPayload = prefs.getString('pendingPayload');
+  print("main.dart pendingPayload:$pendingPayload");
+
   // Load the payload
   String initialRoute = AlarmListPage.routeName;
   if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
     selectedNotificationPayload =
         notificationAppLaunchDetails!.notificationResponse?.payload;
     initialRoute = AlarmScreen.routeName;
+  } else if (pendingPayload != null) {
+    selectedNotificationPayload = pendingPayload;
+    initialRoute = AlarmScreen.routeName;
   }
-
-  // get the alarm id from shared preferences
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? pendingPayload = prefs.getString('pendingPayload');
-  print(pendingPayload)
 
   runApp(
     MaterialApp(
