@@ -1,0 +1,53 @@
+name: client
+description: A new Flutter project.
+
+# Prevent accidental publishing to pub.dev.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.5 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite: any
+  path_provider: any
+  get: ^4.1.4
+  slidable_button: any
+  flutter_isolate: any
+  flutter_foreground_service: any
+  android_alarm_manager_plus: any
+  flutter_ringtone_player: any
+  flutter_local_notifications: any
+  shared_preferences: any
+  device_info_plus: any
+  flutter_timezone: any
+  just_audio: ^0.9.34
+  http: any
+  image: any
+  flutter_localizations:
+    sdk: flutter
+  alarm: ^1.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Enable generation of localized Strings from arb files.
+  generate: true
+
+  assets:
+    # Add assets from the images directory to the application.
+    - assets/images/
+    - assets/mozart.mp3
+    - assets/nokia.mp3
+    - assets/one_piece.mp3
+    - assets/star_wars.mp3
+    - assets/marimba.mp3
