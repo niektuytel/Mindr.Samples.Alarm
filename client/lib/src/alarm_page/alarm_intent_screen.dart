@@ -28,7 +28,7 @@ class AlarmScreen extends StatefulWidget {
   final String? payload;
 
   const AlarmScreen({Key? key, this.payload}) : super(key: key);
-  static const String routeName = '/alarmScreen';
+  static const String routeName = '/alarm-screen';
 
   @override
   _AlarmScreenState createState() => _AlarmScreenState();

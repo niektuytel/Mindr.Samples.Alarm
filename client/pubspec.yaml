@@ -17,10 +17,11 @@ dependencies:
   get: ^4.1.4
   slidable_button: any
   flutter_isolate: any
-  flutter_foreground_service: any
   android_alarm_manager_plus: any
   flutter_ringtone_player: any
   flutter_local_notifications: any
+  vibration: any
+  flutter_foreground_task: any
   shared_preferences: any
   device_info_plus: any
   flutter_timezone: any

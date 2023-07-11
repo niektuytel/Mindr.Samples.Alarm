@@ -158,14 +158,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
-  flutter_foreground_service:
+  flutter_foreground_task:
     dependency: "direct main"
     description:
-      name: flutter_foreground_service
-      sha256: a094e8715f3f72fa395fa0fdaa8b375e1d8b284ca7418babe6dbab456a9a8dd9
+      name: flutter_foreground_task
+      sha256: "9d71e28c0f9657b7366d5c769a25b4c6efe1bb4080ee4c74764295e419036000"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "6.0.0+1"
   flutter_isolate:
     dependency: "direct main"
     description:
@@ -619,7 +619,7 @@ packages:
     source: hosted
     version: "2.1.4"
   vibration:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: vibration
       sha256: d81f665bcb201f586c295a21f3fe8f1cb6dc32c81a213a99e9c714ec8e811ce5
