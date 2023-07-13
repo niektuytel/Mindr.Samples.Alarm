@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -49,7 +50,9 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
     // Foreground task
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // TODO: maybe later use this on specific versions of android
       await _requestPermissionForAndroid();
+
       _initForegroundTask();
 
       // You can get the previous ReceivePort without restarting the service.

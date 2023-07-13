@@ -7,6 +7,7 @@ import 'package:alarm/alarm.dart';
 import 'package:client/src/alarm_page/alarm_item.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'alarm_intent_screen.dart';
 import 'package:intl/intl.dart';
 import '../db_helper.dart';
+import 'alarm_page.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -23,6 +25,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 void notificationHandler(NotificationResponse response) async {
   print(
       'Notification handler id:${response.id} payload:${response.payload!} action:${response.actionId}');
+
   int alarmId = jsonDecode(response.payload!)['alarmId'];
   String type = jsonDecode(response.payload!)['type'];
   int id = response.id!;
@@ -121,69 +124,119 @@ class AlarmReceiver {
         payload: jsonEncode(payloadData));
   }
 
-  @pragma('vm:entry-point')
-  static Future<void> showNotification(int id) async {
+  static Future<bool> showNotification(int id) async {
     print('Alarm triggered!');
     DBHelper dbHelper = DBHelper();
     AlarmItem? alarmItem = await dbHelper.getAlarm(id);
 
     if (alarmItem == null) {
-      return;
+      return false;
     }
 
-    // Sound
-    final audioPlayer = AudioPlayer();
-    Duration? audioDuration = await audioPlayer.setAsset('assets/marimba.mp3');
-    audioPlayer.setLoopMode(LoopMode.all);
-    audioPlayer.play();
+    // FlutterForegroundTask.init(
+    //   androidNotificationOptions: AndroidNotificationOptions(
+    //     id: 500,
+    //     channelId: 'notification_channel_id',
+    //     channelName: 'Foreground Notification',
+    //     channelDescription:
+    //         'This notification appears when the foreground service is running.',
+    //     channelImportance: NotificationChannelImportance.LOW,
+    //     priority: NotificationPriority.LOW,
+    //     iconData: const NotificationIconData(
+    //       resType: ResourceType.mipmap,
+    //       resPrefix: ResourcePrefix.ic,
+    //       name: 'launcher',
+    //       backgroundColor: Colors.orange,
+    //     ),
+    //     buttons: [
+    //       const NotificationButton(
+    //         id: 'sendButton',
+    //         text: 'Send',
+    //         textColor: Colors.orange,
+    //       ),
+    //       const NotificationButton(
+    //         id: 'testButton',
+    //         text: 'Test',
+    //         textColor: Colors.grey,
+    //       ),
+    //     ],
+    //   ),
+    //   iosNotificationOptions: const IOSNotificationOptions(
+    //     showNotification: true,
+    //     playSound: false,
+    //   ),
+    //   foregroundTaskOptions: const ForegroundTaskOptions(
+    //     interval: 5000,
+    //     isOnceEvent: false,
+    //     autoRunOnBoot: true,
+    //     allowWakeLock: true,
+    //     allowWifiLock: true,
+    //   ),
+    // );
 
-    // Stop playback after 20 minutes
-    Timer(Duration(minutes: 20), () async {
-      await audioPlayer.stop();
-      await AudioPlayer.clearAssetCache();
-    });
+    // // Sound
+    // final audioPlayer = AudioPlayer();
+    // Duration? audioDuration = await audioPlayer.setAsset('assets/marimba.mp3');
+    // audioPlayer.setLoopMode(LoopMode.all);
+    // audioPlayer.play();
+
+    // // Stop playback after 20 minutes
+    // Timer(Duration(minutes: 20), () async {
+    //   await audioPlayer.stop();
+    //   await AudioPlayer.clearAssetCache();
+    // });
 
     // cancel the upcoming alarm notification
     await flutterLocalNotificationsPlugin.cancel(alarmItem.id * 1234);
 
-    // Setup your custom sound here.
-    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      alarmItem.id.toString(),
-      'Alarm',
-      priority: Priority.high,
-      importance: Importance.high,
-      // sound: RawResourceAndroidNotificationSound('argon'),
-      // audioAttributesUsage: AudioAttributesUsage.alarm,
-      // vibrationPattern: longVibrationPattern,
-      styleInformation: DefaultStyleInformation(true, true),
-      fullScreenIntent: true,
-      autoCancel:
-          false, // Prevents the notification from being dismissed when user taps on it.
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('snooze', 'Snooze', icon: null),
-        AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
-      ],
-    );
+    if (await FlutterForegroundTask.isRunningService) {
+      return FlutterForegroundTask.restartService();
+    } else {
+      return FlutterForegroundTask.startService(
+        notificationTitle: 'Foreground Service is running',
+        notificationText: 'Tap to return to the app',
+        callback: startCallback,
+      );
+    }
 
-    var platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
+    // // Setup your custom sound here.
+    // var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+    //   alarmItem.id.toString(),
+    //   'Alarm',
+    //   priority: Priority.high,
+    //   importance: Importance.high,
+    //   // sound: RawResourceAndroidNotificationSound('argon'),
+    //   // audioAttributesUsage: AudioAttributesUsage.alarm,
+    //   // vibrationPattern: longVibrationPattern,
+    //   styleInformation: DefaultStyleInformation(true, true),
+    //   fullScreenIntent: true,
+    //   autoCancel:
+    //       false, // Prevents the notification from being dismissed when user taps on it.
+    //   actions: <AndroidNotificationAction>[
+    //     AndroidNotificationAction('snooze', 'Snooze', icon: null),
+    //     AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
+    //   ],
+    // );
 
-    String body = alarmItem.label.isEmpty
-        ? formatDateTime(alarmItem.time)
-        : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
+    // var platformChannelSpecifics = NotificationDetails(
+    //   android: androidPlatformChannelSpecifics,
+    // );
 
-    // create the payload
-    Map<String, dynamic> payloadData = {
-      'alarmId': alarmItem.id,
-      'type': 'showNotification',
-    };
+    // String body = alarmItem.label.isEmpty
+    //     ? formatDateTime(alarmItem.time)
+    //     : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
 
-    await flutterLocalNotificationsPlugin.show(
-        id, 'Alarm', body, platformChannelSpecifics,
-        payload: jsonEncode(payloadData));
+    // // create the payload
+    // Map<String, dynamic> payloadData = {
+    //   'alarmId': alarmItem.id,
+    //   'type': 'showNotification',
+    // };
 
-    // play sound
+    // await flutterLocalNotificationsPlugin.show(
+    //     id, 'Alarm', body, platformChannelSpecifics,
+    //     payload: jsonEncode(payloadData));
+
+    // // // play sound
   }
 
   static Future<void> showSnoozedNotification(int id) async {
@@ -302,4 +355,13 @@ class AlarmReceiver {
   static String formatDateTime(DateTime dateTime) {
     return DateFormat('EEE h:mm a').format(dateTime);
   }
+}
+
+////////////////////////// FOREGROUND SERVICES //////////////////////////
+
+// The callback function should always be a top-level function.
+@pragma('vm:entry-point')
+void startCallback() {
+  // The setTaskHandler function must be called to handle the task in the background.
+  FlutterForegroundTask.setTaskHandler(MyTaskHandler());
 }

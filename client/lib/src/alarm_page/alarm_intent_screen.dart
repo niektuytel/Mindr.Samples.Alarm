@@ -1,34 +1,19 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slidable_button/slidable_button.dart';
 
 import 'alarm_notifications.dart';
 import '../db_helper.dart';
 
-// class HomePage extends StatefulWidget {
-//   const HomePage(
-//     this.notificationAppLaunchDetails, {
-//     Key? key,
-//   }) : super(key: key);
-
-//   static const String routeName = '/';
-
-//   final NotificationAppLaunchDetails? notificationAppLaunchDetails;
-
-//   bool get didNotificationLaunchApp =>
-//       notificationAppLaunchDetails?.didNotificationLaunchApp ?? false;
-
-//   @override
-//   _HomePageState createState() => _HomePageState();
-// }
-
 class AlarmScreen extends StatefulWidget {
   final String? payload;
 
   const AlarmScreen({Key? key, this.payload}) : super(key: key);
-  static const String routeName = '/alarm-screen';
+  static const String routeName = '/resume-route';
 
   @override
   _AlarmScreenState createState() => _AlarmScreenState();
@@ -40,6 +25,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
   @override
   void initState() {
     super.initState();
+
     _dragValue = 0.0;
   }
 
@@ -115,7 +101,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
                         //     SharedPreferences.getInstance()..getInstance().then((value) => null);
 
                         if (position == SlidableButtonPosition.end) {
-                          Navigator.pop(context);
+                          _stopForegroundTask();
+                          // Navigate back to first route when tapped.
+                          Navigator.of(context).pop();
                         }
                         //     position == SlidableButtonPosition.start) {
                         //   // Cancel notifications.
@@ -134,7 +122,8 @@ class _AlarmScreenState extends State<AlarmScreen> {
                   SizedBox(height: 20), // add a bit of spacing
                   ElevatedButton(
                     onPressed: () {
-                      print("Snooze button pressed");
+                      // Navigate back to first route when tapped.
+                      Navigator.of(context).pop();
                     },
                     child: Text('Snooze'),
                     style: ElevatedButton.styleFrom(
@@ -149,6 +138,10 @@ class _AlarmScreenState extends State<AlarmScreen> {
         ],
       ),
     );
+  }
+
+  Future<bool> _stopForegroundTask() {
+    return FlutterForegroundTask.stopService();
   }
 
   @override
