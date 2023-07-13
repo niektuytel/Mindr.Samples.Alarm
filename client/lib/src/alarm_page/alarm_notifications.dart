@@ -16,6 +16,7 @@ import 'alarm_intent_screen.dart';
 import 'package:intl/intl.dart';
 import '../db_helper.dart';
 import 'alarm_page.dart';
+import 'services/alarm_foreground_task_handler.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -362,6 +363,7 @@ class AlarmReceiver {
 // The callback function should always be a top-level function.
 @pragma('vm:entry-point')
 void startCallback() {
-  // The setTaskHandler function must be called to handle the task in the background.
-  FlutterForegroundTask.setTaskHandler(MyTaskHandler());
+  FlutterForegroundTask.setTaskHandler(AlarmForegroundTaskHandler());
+  // // The setTaskHandler function must be called to handle the task in the background.
+  // FlutterForegroundTask.setTaskHandler(AlarmTaskHandler());
 }
