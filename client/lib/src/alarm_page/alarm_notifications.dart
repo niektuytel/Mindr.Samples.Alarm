@@ -120,8 +120,8 @@ class AlarmReceiver {
       return false;
     }
 
-    // // cancel the upcoming alarm notification
-    // await localNotificationsPlugin.cancel(alarmItem.id * 1234);
+    // cancel the upcoming alarm notification
+    await localNotificationsPlugin.cancel(alarmItem.id * 1234);
 
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
