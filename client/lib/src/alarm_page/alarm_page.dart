@@ -1,21 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:ui';
 
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
-import 'package:client/src/alarm_page/alarm_intent_screen.dart';
-import 'package:client/src/alarm_page/services/alarm_foreground_task_handler.dart';
+import 'package:intl/intl.dart';
+import 'package:client/src/widgets/alarm_screen.dart';
+import 'package:client/src/alarm_page/services/foreground_task_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:intl/intl.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:vibration/vibration.dart';
-import '../../main.dart';
 import '../mindr_page/mindr_view.dart';
 import 'alarm_notifications.dart';
-import '../db_helper.dart';
-import 'alarm_item.dart';
+import '../services/sqflite_service.dart';
+import '../models/alarm_item_view.dart';
 
 class AlarmListPage extends StatefulWidget {
   static const routeName = '/';
@@ -24,15 +20,15 @@ class AlarmListPage extends StatefulWidget {
   // bool get didNotificationLaunchApp =>
   //     notificationAppLaunchDetails?.didNotificationLaunchApp ?? false;
 
-  AlarmListPage({Key? key, List<AlarmItem>? items})
+  AlarmListPage({Key? key, List<AlarmItemView>? items})
       : _items = items,
         // notificationAppLaunchDetails = appLaunchDetails,
         super(key: key);
 
-  List<AlarmItem>? _items = [];
+  List<AlarmItemView>? _items = [];
 
-  List<AlarmItem> get items => _items ?? [];
-  set items(List<AlarmItem> value) {
+  List<AlarmItemView> get items => _items ?? [];
+  set items(List<AlarmItemView> value) {
     _items = value;
   }
 
@@ -55,7 +51,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
       // TODO: maybe later use this on specific versions of android
       await _requestPermissionForAndroid();
 
-      _initForegroundTask();
+      // _initForegroundTask();
 
       // You can get the previous ReceivePort without restarting the service.
       if (await FlutterForegroundTask.isRunningService) {
@@ -64,7 +60,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
       }
     });
 
-    DBHelper().getAlarms().then((alarms) {
+    SqfliteService().getAlarms().then((alarms) {
       setState(() {
         widget.items = alarms;
       });
@@ -106,7 +102,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             initialTime: TimeOfDay.now(),
           );
           if (selectedTime != null) {
-            AlarmItem newAlarm = AlarmItem(
+            AlarmItemView newAlarm = AlarmItemView(
               0, // Change to appropriate ID based on your requirements
               DateTime(
                 DateTime.now().year,
@@ -124,7 +120,8 @@ class _AlarmListPageState extends State<AlarmListPage> {
             setState(() {
               widget.items.add(newAlarm);
             });
-            DBHelper().insert(newAlarm); // Insert new alarm into the database
+            SqfliteService()
+                .insert(newAlarm); // Insert new alarm into the database
           }
         },
       ),
@@ -148,10 +145,8 @@ class _AlarmListPageState extends State<AlarmListPage> {
         if (value == 0) {
           Navigator.restorablePushNamed(context, MindrView.routeName);
         } else if (value == 1) {
-          _startForegroundTask();
           //TODO: Navigator.restorablePushNamed(context, FeedbackView.routeName);
         } else if (value == 2) {
-          _stopForegroundTask();
           //TODO: Navigator.restorablePushNamed(context, SettingsView.routeName);
         }
       },
@@ -198,7 +193,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
                   selectedTime.minute,
                 );
               });
-              await DBHelper().update(item); // update in the database
+              await SqfliteService().update(item); // update in the database
             }
           },
           child: Text(
@@ -225,7 +220,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     );
   }
 
-  Widget _buildSubtitle(AlarmItem item) {
+  Widget _buildSubtitle(AlarmItemView item) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -235,7 +230,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
           value: item.isActive,
           onChanged: (newValue) {
             setState(() => item.isActive = newValue);
-            DBHelper().update(item); // update in the database
+            SqfliteService().update(item); // update in the database
           },
           activeColor: Colors.white,
         ),
@@ -243,7 +238,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     );
   }
 
-  Widget _buildExpansionTileChildren(AlarmItem item) {
+  Widget _buildExpansionTileChildren(AlarmItemView item) {
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -254,13 +249,13 @@ class _AlarmListPageState extends State<AlarmListPage> {
           _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) {
             setState(() {
               item.vibrationChecked = value!;
-              DBHelper().update(item); // update in the database
+              SqfliteService().update(item); // update in the database
             });
           }),
           _buildSwitchRow(item.syncWithMindr, 'Bind with Mindr', (value) {
             setState(() {
               item.syncWithMindr = value!;
-              DBHelper().update(item); // update in the database
+              SqfliteService().update(item); // update in the database
             });
           }),
         ],
@@ -268,7 +263,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     );
   }
 
-  List<Widget> _buildDaySelectors(AlarmItem item, List<String> dayNames) {
+  List<Widget> _buildDaySelectors(AlarmItemView item, List<String> dayNames) {
     return List<Widget>.generate(7, (index) {
       bool isScheduled = item.scheduledDays.contains(index + 1);
       return GestureDetector(
@@ -279,7 +274,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             } else {
               item.scheduledDays.add(index + 1);
             }
-            DBHelper().update(item); // update in the database
+            SqfliteService().update(item); // update in the database
           });
         },
         child: Container(
@@ -380,76 +375,6 @@ class _AlarmListPageState extends State<AlarmListPage> {
     }
   }
 
-  void _initForegroundTask() {
-    FlutterForegroundTask.init(
-      androidNotificationOptions: AndroidNotificationOptions(
-        id: 500,
-        channelId: 'notification_channel_id',
-        channelName: 'Foreground Notification',
-        channelDescription:
-            'This notification appears when the foreground service is running.',
-        channelImportance: NotificationChannelImportance.LOW,
-        priority: NotificationPriority.LOW,
-        iconData: const NotificationIconData(
-          resType: ResourceType.mipmap,
-          resPrefix: ResourcePrefix.ic,
-          name: 'launcher',
-          backgroundColor: Colors.orange,
-        ),
-        buttons: [
-          const NotificationButton(
-            id: 'sendButton',
-            text: 'Send',
-            textColor: Colors.orange,
-          ),
-          const NotificationButton(
-            id: 'testButton',
-            text: 'Test',
-            textColor: Colors.grey,
-          ),
-        ],
-      ),
-      iosNotificationOptions: const IOSNotificationOptions(
-        showNotification: true,
-        playSound: false,
-      ),
-      foregroundTaskOptions: const ForegroundTaskOptions(
-        interval: 5000,
-        isOnceEvent: false,
-        autoRunOnBoot: true,
-        allowWakeLock: true,
-        allowWifiLock: true,
-      ),
-    );
-  }
-
-  Future<bool> _startForegroundTask() async {
-    // You can save data using the saveData function.
-    await FlutterForegroundTask.saveData(key: 'customData', value: 'hello');
-
-    // Register the receivePort before starting the service.
-    final ReceivePort? receivePort = FlutterForegroundTask.receivePort;
-    final bool isRegistered = _registerReceivePort(receivePort);
-    if (!isRegistered) {
-      print('Failed to register receivePort!');
-      return false;
-    }
-
-    if (await FlutterForegroundTask.isRunningService) {
-      return FlutterForegroundTask.restartService();
-    } else {
-      return FlutterForegroundTask.startService(
-        notificationTitle: 'Foreground Service is running',
-        notificationText: 'Tap to return to the app',
-        callback: startCallback,
-      );
-    }
-  }
-
-  Future<bool> _stopForegroundTask() {
-    return FlutterForegroundTask.stopService();
-  }
-
   bool _registerReceivePort(ReceivePort? newReceivePort) {
     if (newReceivePort == null) {
       return false;
@@ -477,13 +402,4 @@ class _AlarmListPageState extends State<AlarmListPage> {
     _receivePort?.close();
     _receivePort = null;
   }
-}
-
-////////////////////////// FOREGROUND SERVICES //////////////////////////
-
-// The callback function should always be a top-level function.
-@pragma('vm:entry-point')
-void startCallback() {
-  // The setTaskHandler function must be called to handle the task in the background.
-  FlutterForegroundTask.setTaskHandler(AlarmForegroundTaskHandler());
 }

@@ -4,21 +4,24 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:alarm/alarm.dart';
-import 'package:client/src/alarm_page/alarm_item.dart';
+import 'package:client/src/models/alarm_item_view.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:client/src/services/shared_preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'alarm_intent_screen.dart';
+import '../../main.dart';
+import '../models/alarm_brief_item.dart';
+import '../widgets/alarm_screen.dart';
 import 'package:intl/intl.dart';
-import '../db_helper.dart';
+import '../services/sqflite_service.dart';
 import 'alarm_page.dart';
-import 'services/alarm_foreground_task_handler.dart';
+import 'services/foreground_task_handler.dart';
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+final FlutterLocalNotificationsPlugin localNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 // This must be a top-level function, outside of any class.
@@ -27,40 +30,23 @@ void notificationHandler(NotificationResponse response) async {
   print(
       'Notification handler id:${response.id} payload:${response.payload!} action:${response.actionId}');
 
-  int alarmId = jsonDecode(response.payload!)['alarmId'];
-  String type = jsonDecode(response.payload!)['type'];
-  int id = response.id!;
+  int alarmItemId = jsonDecode(response.payload!)['id'];
+  bool? openAlarmOnClick = jsonDecode(response.payload!)['open_alarm_onclick'];
 
   // This is called when a notification or its action is tapped.
   if (response.actionId != null) {
-    // cancel upcoming notification
-    if (alarmId != id) {
-      await AndroidAlarmManager.cancel(id);
-      print('Notification handler, delete upcoming notification');
-    }
-
     if (response.actionId == 'snooze') {
-      await AlarmReceiver.showSnoozedNotification(alarmId);
-
-      print('Notification handler, snooze notification');
+      await AlarmReceiver.snoozeAlarm(alarmItemId);
     } else if (response.actionId == 'dismiss') {
-      await AndroidAlarmManager.cancel(alarmId);
-
-      // TODO: cancel/remove the alarm in the database, when not have days?
-      print('Notification handler, delete notification');
+      await AlarmReceiver.stopAlarm(alarmItemId);
     }
+
+    return;
   }
 
-  if (type == 'showNotification' || type == 'showSnoozedNotification') {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('pendingPayload', response.payload!);
-
-    // This is needed to show the AlarmScreen when the app is in the foreground
-    runApp(
-      MaterialApp(
-        home: AlarmScreen(payload: response.payload),
-      ),
-    );
+  if (openAlarmOnClick == true) {
+    navigatorKey.currentState!
+        .push(MaterialPageRoute(builder: (_) => AlarmScreen(alarmItemId)));
   }
 }
 
@@ -72,7 +58,7 @@ class AlarmReceiver {
     final InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
 
-    await flutterLocalNotificationsPlugin.initialize(
+    await localNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: notificationHandler,
       onDidReceiveBackgroundNotificationResponse: notificationHandler,
@@ -82,8 +68,8 @@ class AlarmReceiver {
   static Future<void> showUpcomingNotification(int id) async {
     int itemId = (id / 1234).truncate();
 
-    DBHelper dbHelper = DBHelper();
-    AlarmItem? alarmItem = await dbHelper.getAlarm(itemId);
+    SqfliteService dbHelper = SqfliteService();
+    AlarmItemView? alarmItem = await dbHelper.getAlarm(itemId);
 
     if (alarmItem == null) {
       return;
@@ -101,7 +87,7 @@ class AlarmReceiver {
       autoCancel:
           false, // Prevents the notification from being dismissed when user taps on it.
       actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(id.toString(), 'Dismiss alarm',
+        AndroidNotificationAction('dismiss', 'Dismiss',
             titleColor: const Color.fromRGBO(28, 56, 134, 1), icon: null)
       ],
     );
@@ -116,133 +102,127 @@ class AlarmReceiver {
 
     // create the payload
     Map<String, dynamic> payloadData = {
-      'alarmId': alarmItem.id,
-      'type': 'showUpcomingNotification',
+      'id': alarmItem.id,
+      'open_alarm_onclick': true,
     };
 
-    await flutterLocalNotificationsPlugin.show(
+    await localNotificationsPlugin.show(
         id, 'Upcoming alarm', body, platformChannelSpecifics,
         payload: jsonEncode(payloadData));
   }
 
   static Future<bool> showNotification(int id) async {
     print('Alarm triggered!');
-    DBHelper dbHelper = DBHelper();
-    AlarmItem? alarmItem = await dbHelper.getAlarm(id);
+    SqfliteService dbHelper = SqfliteService();
+    AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
 
     if (alarmItem == null) {
       return false;
     }
 
-    // FlutterForegroundTask.init(
-    //   androidNotificationOptions: AndroidNotificationOptions(
-    //     id: 500,
-    //     channelId: 'notification_channel_id',
-    //     channelName: 'Foreground Notification',
-    //     channelDescription:
-    //         'This notification appears when the foreground service is running.',
-    //     channelImportance: NotificationChannelImportance.LOW,
-    //     priority: NotificationPriority.LOW,
-    //     iconData: const NotificationIconData(
-    //       resType: ResourceType.mipmap,
-    //       resPrefix: ResourcePrefix.ic,
-    //       name: 'launcher',
-    //       backgroundColor: Colors.orange,
-    //     ),
-    //     buttons: [
-    //       const NotificationButton(
-    //         id: 'sendButton',
-    //         text: 'Send',
-    //         textColor: Colors.orange,
-    //       ),
-    //       const NotificationButton(
-    //         id: 'testButton',
-    //         text: 'Test',
-    //         textColor: Colors.grey,
-    //       ),
-    //     ],
-    //   ),
-    //   iosNotificationOptions: const IOSNotificationOptions(
-    //     showNotification: true,
-    //     playSound: false,
-    //   ),
-    //   foregroundTaskOptions: const ForegroundTaskOptions(
-    //     interval: 5000,
-    //     isOnceEvent: false,
-    //     autoRunOnBoot: true,
-    //     allowWakeLock: true,
-    //     allowWifiLock: true,
-    //   ),
-    // );
+    // // cancel the upcoming alarm notification
+    // await localNotificationsPlugin.cancel(alarmItem.id * 1234);
 
-    // // Sound
-    // final audioPlayer = AudioPlayer();
-    // Duration? audioDuration = await audioPlayer.setAsset('assets/marimba.mp3');
-    // audioPlayer.setLoopMode(LoopMode.all);
-    // audioPlayer.play();
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        id: 500,
+        channelId: 'notification_channel_id',
+        channelName: 'Foreground Notification',
+        channelDescription:
+            'This notification appears when the foreground service is running.',
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
+        iconData: const NotificationIconData(
+          resType: ResourceType.mipmap,
+          resPrefix: ResourcePrefix.ic,
+          name: 'launcher',
+          backgroundColor: Colors.orange,
+        ),
+        buttons: [
+          const NotificationButton(
+            id: 'sendButton',
+            text: 'Send',
+            textColor: Colors.orange,
+          ),
+          const NotificationButton(
+            id: 'testButton',
+            text: 'Test',
+            textColor: Colors.grey,
+          ),
+        ],
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: true,
+        playSound: false,
+      ),
+      foregroundTaskOptions: const ForegroundTaskOptions(
+        interval: 5000,
+        isOnceEvent: false,
+        autoRunOnBoot: true,
+        allowWakeLock: true,
+        allowWifiLock: true,
+      ),
+    );
 
-    // // Stop playback after 20 minutes
-    // Timer(Duration(minutes: 20), () async {
-    //   await audioPlayer.stop();
-    //   await AudioPlayer.clearAssetCache();
-    // });
+    // You can save data using the saveData function.
+    await FlutterForegroundTask.saveData(
+        key: 'alarmItemId', value: alarmItem.id);
 
-    // cancel the upcoming alarm notification
-    await flutterLocalNotificationsPlugin.cancel(alarmItem.id * 1234);
+    return FlutterForegroundTask.startService(
+      notificationTitle: 'Foreground Service is running',
+      notificationText: 'Tap to return to the app',
+      callback: startCallback,
+    );
 
-    if (await FlutterForegroundTask.isRunningService) {
-      return FlutterForegroundTask.restartService();
-    } else {
-      return FlutterForegroundTask.startService(
-        notificationTitle: 'Foreground Service is running',
-        notificationText: 'Tap to return to the app',
-        callback: startCallback,
-      );
-    }
-
-    // // Setup your custom sound here.
-    // var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-    //   alarmItem.id.toString(),
-    //   'Alarm',
-    //   priority: Priority.high,
-    //   importance: Importance.high,
-    //   // sound: RawResourceAndroidNotificationSound('argon'),
-    //   // audioAttributesUsage: AudioAttributesUsage.alarm,
-    //   // vibrationPattern: longVibrationPattern,
-    //   styleInformation: DefaultStyleInformation(true, true),
-    //   fullScreenIntent: true,
-    //   autoCancel:
-    //       false, // Prevents the notification from being dismissed when user taps on it.
-    //   actions: <AndroidNotificationAction>[
-    //     AndroidNotificationAction('snooze', 'Snooze', icon: null),
-    //     AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
-    //   ],
-    // );
-
-    // var platformChannelSpecifics = NotificationDetails(
-    //   android: androidPlatformChannelSpecifics,
-    // );
-
-    // String body = alarmItem.label.isEmpty
-    //     ? formatDateTime(alarmItem.time)
-    //     : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
-
-    // // create the payload
-    // Map<String, dynamic> payloadData = {
-    //   'alarmId': alarmItem.id,
-    //   'type': 'showNotification',
-    // };
-
-    // await flutterLocalNotificationsPlugin.show(
-    //     id, 'Alarm', body, platformChannelSpecifics,
-    //     payload: jsonEncode(payloadData));
-
-    // // // play sound
+    // if (await FlutterForegroundTask.isRunningService) {
+    //   return FlutterForegroundTask.restartService();
+    // } else {
+    //   return FlutterForegroundTask.startService(
+    //     notificationTitle: 'Foreground Service is running',
+    //     notificationText: 'Tap to return to the app',
+    //     callback: startCallback,
+    //   );
+    // }
   }
 
-  static Future<void> showSnoozedNotification(int id) async {
-    DBHelper dbHelper = DBHelper();
-    AlarmItem? alarmItem = await dbHelper.getAlarm(id);
+  static Future<void> stopAlarm(int id) async {
+    SqfliteService dbHelper = SqfliteService();
+    AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
+
+    if (alarmItem == null) {
+      return;
+    }
+
+    print('Stop alarm');
+
+    // cancel the upcoming alarm notification and the alarm
+    await localNotificationsPlugin.cancel(alarmItem.id * 1234); // upcoming
+    await localNotificationsPlugin.cancel(alarmItem.id);
+    FlutterForegroundTask.stopService();
+  }
+
+  static Future<void> snoozeAlarm(int id) async {
+    SqfliteService dbHelper = SqfliteService();
+    AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
+
+    if (alarmItem == null) {
+      return;
+    }
+
+    print('Snoozing alarm for 10 minutes...');
+
+    // cancel the upcoming alarm notification and the alarm
+    await localNotificationsPlugin.cancel(alarmItem.id * 1234);
+    await localNotificationsPlugin.cancel(alarmItem.id);
+    FlutterForegroundTask.stopService();
+
+    // show snoozed alarm
+    scheduleSnoozedNotification(alarmItem.id);
+  }
+
+  static Future<void> scheduleSnoozedNotification(int id) async {
+    SqfliteService dbHelper = SqfliteService();
+    AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
 
     if (alarmItem == null) {
       return;
@@ -268,22 +248,22 @@ class AlarmReceiver {
       android: androidPlatformChannelSpecifics,
     );
 
+    DateTime alarmTime = DateTime.now().add(Duration(minutes: 10));
     String body = alarmItem.label.isEmpty
-        ? formatDateTime(alarmItem.time)
-        : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
+        ? formatDateTime(alarmTime)
+        : '${formatDateTime(alarmTime)} - ${alarmItem.label}';
 
     // create the payload
     Map<String, dynamic> payloadData = {
-      'alarmId': alarmItem.id,
-      'type': 'showSnoozedNotification',
+      'id': alarmItem.id,
+      'open_alarm_onclick': true,
     };
 
-    await flutterLocalNotificationsPlugin.show(
+    await localNotificationsPlugin.show(
         id, 'Snoozed alarm', body, platformChannelSpecifics,
         payload: jsonEncode(payloadData));
 
     // Update alarm notification (time)
-    DateTime alarmTime = DateTime.now().add(Duration(minutes: 10));
     await AndroidAlarmManager.oneShotAt(
         alarmTime, alarmItem.id, AlarmReceiver.showNotification,
         exact: true,
@@ -291,66 +271,6 @@ class AlarmReceiver {
         rescheduleOnReboot: true,
         alarmClock: true,
         allowWhileIdle: true);
-  }
-
-  static Future<void> showMissedNotification(int id) async {
-    DBHelper dbHelper = DBHelper();
-    AlarmItem? alarmItem = await dbHelper.getAlarm(id);
-
-    if (alarmItem == null) {
-      return;
-    }
-
-    print('Missed Alarm!');
-
-    // cancel the upcoming alarm notification and the alarm
-    await flutterLocalNotificationsPlugin.cancel(alarmItem.id * 1234);
-    // await flutterLocalNotificationsPlugin.cancel(alarmItem.id);
-
-    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      (alarmItem.id).toString(),
-      'Missed Alarm',
-      importance: Importance.high,
-      priority: Priority.defaultPriority,
-      showWhen: true,
-      styleInformation: DefaultStyleInformation(true, true),
-    );
-
-    var platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
-
-    String body = alarmItem.label.isEmpty
-        ? formatDateTime(alarmItem.time)
-        : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
-
-    // create the payload
-    Map<String, dynamic> payloadData = {
-      'alarmId': alarmItem.id,
-      'type': 'showMissedNotification',
-    };
-
-    await flutterLocalNotificationsPlugin.show(
-        alarmItem.id, 'Missed alarm', body, platformChannelSpecifics,
-        payload: jsonEncode(payloadData));
-  }
-
-  static Future<void> snoozeNotification(int id) async {
-    DBHelper dbHelper = DBHelper();
-    AlarmItem? alarmItem = await dbHelper.getAlarm(id);
-
-    if (alarmItem == null) {
-      return;
-    }
-
-    print('Alarm snoozed!');
-
-    // cancel the upcoming alarm notification and the alarm
-    await flutterLocalNotificationsPlugin.cancel(alarmItem.id * 1234);
-    await flutterLocalNotificationsPlugin.cancel(alarmItem.id);
-
-    // show snoozed alarm
-    showSnoozedNotification(alarmItem.id);
   }
 
   static String formatDateTime(DateTime dateTime) {
