@@ -45,8 +45,13 @@ void notificationHandler(NotificationResponse response) async {
   }
 
   if (openAlarmOnClick == true) {
-    navigatorKey.currentState!
-        .push(MaterialPageRoute(builder: (_) => AlarmScreen(alarmItemId)));
+    await SharedPreferencesService.setActiveAlarmItemId(alarmItemId);
+
+    // Open the alarm screen, when app is in background.
+    if (navigatorKey.currentState != null) {
+      navigatorKey.currentState!
+          .push(MaterialPageRoute(builder: (_) => AlarmScreen(alarmItemId)));
+    }
   }
 }
 

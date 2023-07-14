@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:client/src/services/shared_preferences_service.dart';
 import 'package:client/src/widgets/alarm_screen.dart';
 import 'package:client/src/alarm_page/alarm_page.dart';
 import 'package:flutter/foundation.dart';
@@ -26,13 +27,22 @@ void main() async {
   await AndroidAlarmManager.initialize();
   await _configureLocalTimeZone();
 
+  var alarmItemId =
+      await SharedPreferencesService.oneTimeReadActiveAlarmItemId();
+  print("main >> ${alarmItemId}");
+  String initialRoute = AlarmListPage.routeName;
+
+  if (alarmItemId != null) {
+    initialRoute = AlarmScreen.routeName;
+  }
+
   runApp(
     MaterialApp(
-      initialRoute: AlarmListPage.routeName,
+      initialRoute: initialRoute,
       navigatorKey: navigatorKey,
       routes: <String, WidgetBuilder>{
         AlarmListPage.routeName: (_) => AlarmListPage(),
-        AlarmScreen.routeName: (context) => const AlarmScreen(-1),
+        AlarmScreen.routeName: (context) => AlarmScreen(alarmItemId),
       },
     ),
   );
