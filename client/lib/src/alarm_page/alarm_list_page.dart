@@ -4,25 +4,21 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:intl/intl.dart';
-import 'package:client/src/widgets/alarm_screen.dart';
-import 'package:client/src/alarm_page/services/foreground_task_handler.dart';
+import 'package:client/src/alarm_page/alarm_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import '../../main.dart';
 import '../mindr_page/mindr_view.dart';
 import 'alarm_notifications.dart';
+import '../services/shared_preferences_service.dart';
 import '../services/sqflite_service.dart';
 import '../models/alarm_item_view.dart';
 
 class AlarmListPage extends StatefulWidget {
   static const routeName = '/';
 
-  // final NotificationAppLaunchDetails? notificationAppLaunchDetails;
-  // bool get didNotificationLaunchApp =>
-  //     notificationAppLaunchDetails?.didNotificationLaunchApp ?? false;
-
   AlarmListPage({Key? key, List<AlarmItemView>? items})
       : _items = items,
-        // notificationAppLaunchDetails = appLaunchDetails,
         super(key: key);
 
   List<AlarmItemView>? _items = [];
@@ -39,7 +35,6 @@ class AlarmListPage extends StatefulWidget {
 class _AlarmListPageState extends State<AlarmListPage> {
   late final ScrollController _scrollController;
   Color _appBarColor = Colors.transparent;
-  ReceivePort? _receivePort;
   int alarmId = 0;
 
   @override
@@ -53,11 +48,11 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
       // _initForegroundTask();
 
-      // You can get the previous ReceivePort without restarting the service.
-      if (await FlutterForegroundTask.isRunningService) {
-        final newReceivePort = FlutterForegroundTask.receivePort;
-        _registerReceivePort(newReceivePort);
-      }
+      // // You can get the previous ReceivePort without restarting the service.
+      // if (await FlutterForegroundTask.isRunningService) {
+      //   final newReceivePort = FlutterForegroundTask.receivePort;
+      //   _registerReceivePort(newReceivePort);
+      // }
     });
 
     SqfliteService().getAlarms().then((alarms) {
@@ -121,7 +116,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
               widget.items.add(newAlarm);
             });
             SqfliteService()
-                .insert(newAlarm); // Insert new alarm into the database
+                .insertAlarm(newAlarm); // Insert new alarm into the database
           }
         },
       ),
@@ -193,15 +188,16 @@ class _AlarmListPageState extends State<AlarmListPage> {
                   selectedTime.minute,
                 );
               });
-              await SqfliteService().update(item); // update in the database
+              await SqfliteService()
+                  .updateAlarm(item); // update in the database
             }
           },
           child: Text(
             DateFormat('h:mm a').format(item.time),
             style: TextStyle(
-              fontWeight: item.isActive ? FontWeight.bold : FontWeight.normal,
+              fontWeight: item.enabled ? FontWeight.bold : FontWeight.normal,
               fontSize: 50,
-              color: item.isActive
+              color: item.enabled
                   ? Colors.white
                   : const Color.fromARGB(255, 155, 155, 155),
             ),
@@ -227,10 +223,10 @@ class _AlarmListPageState extends State<AlarmListPage> {
         Text(getFormattedScheduledDays(item.scheduledDays),
             style: const TextStyle(fontSize: 16, color: Colors.white)),
         Switch(
-          value: item.isActive,
+          value: item.enabled,
           onChanged: (newValue) {
-            setState(() => item.isActive = newValue);
-            SqfliteService().update(item); // update in the database
+            setState(() => item.enabled = newValue);
+            SqfliteService().updateAlarm(item); // update in the database
           },
           activeColor: Colors.white,
         ),
@@ -249,13 +245,13 @@ class _AlarmListPageState extends State<AlarmListPage> {
           _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) {
             setState(() {
               item.vibrationChecked = value!;
-              SqfliteService().update(item); // update in the database
+              SqfliteService().updateAlarm(item); // update in the database
             });
           }),
           _buildSwitchRow(item.syncWithMindr, 'Bind with Mindr', (value) {
             setState(() {
               item.syncWithMindr = value!;
-              SqfliteService().update(item); // update in the database
+              SqfliteService().updateAlarm(item); // update in the database
             });
           }),
         ],
@@ -274,7 +270,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             } else {
               item.scheduledDays.add(index + 1);
             }
-            SqfliteService().update(item); // update in the database
+            SqfliteService().updateAlarm(item); // update in the database
           });
         },
         child: Container(
@@ -318,10 +314,6 @@ class _AlarmListPageState extends State<AlarmListPage> {
   @override
   void dispose() {
     _scrollController.dispose();
-
-    // Foreground Task
-    _closeReceivePort();
-
     super.dispose();
   }
 
@@ -338,68 +330,38 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
     return selectedDays.join(', ');
   }
+}
 
-////////////////////////// FOREGROUND SERVICES //////////////////////////
-
-  Future<void> _requestPermissionForAndroid() async {
-    if (!Platform.isAndroid) {
-      return;
-    }
-
-    // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
-    // onNotificationPressed function to be called.
-    //
-    // When the notification is pressed while permission is denied,
-    // the onNotificationPressed function is not called and the app opens.
-    //
-    // If you do not use the onNotificationPressed or launchApp function,
-    // you do not need to write this code.
-    if (!await FlutterForegroundTask.canDrawOverlays) {
-      // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
-      await FlutterForegroundTask.openSystemAlertWindowSettings();
-    }
-
-    // Android 12 or higher, there are restrictions on starting a foreground service.
-    //
-    // To restart the service on device reboot or unexpected problem, you need to allow below permission.
-    if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
-      // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
-      await FlutterForegroundTask.requestIgnoreBatteryOptimization();
-    }
-
-    // Android 13 and higher, you need to allow notification permission to expose foreground service notification.
-    final NotificationPermission notificationPermissionStatus =
-        await FlutterForegroundTask.checkNotificationPermission();
-    if (notificationPermissionStatus != NotificationPermission.granted) {
-      await FlutterForegroundTask.requestNotificationPermission();
-    }
+Future<void> _requestPermissionForAndroid() async {
+  if (!Platform.isAndroid) {
+    return;
   }
 
-  bool _registerReceivePort(ReceivePort? newReceivePort) {
-    if (newReceivePort == null) {
-      return false;
-    }
-
-    _closeReceivePort();
-
-    _receivePort = newReceivePort;
-    _receivePort?.listen((data) {
-      if (data is int) {
-        print('eventCount: $data');
-      } else if (data is String) {
-        if (data == 'onNotificationPressed') {
-          Navigator.of(context).pushNamed(AlarmScreen.routeName);
-        }
-      } else if (data is DateTime) {
-        print('timestamp: ${data.toString()}');
-      }
-    });
-
-    return _receivePort != null;
+  // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
+  // onNotificationPressed function to be called.
+  //
+  // When the notification is pressed while permission is denied,
+  // the onNotificationPressed function is not called and the app opens.
+  //
+  // If you do not use the onNotificationPressed or launchApp function,
+  // you do not need to write this code.
+  if (!await FlutterForegroundTask.canDrawOverlays) {
+    // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
+    await FlutterForegroundTask.openSystemAlertWindowSettings();
   }
 
-  void _closeReceivePort() {
-    _receivePort?.close();
-    _receivePort = null;
+  // Android 12 or higher, there are restrictions on starting a foreground service.
+  //
+  // To restart the service on device reboot or unexpected problem, you need to allow below permission.
+  if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+    // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
+    await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+  }
+
+  // Android 13 and higher, you need to allow notification permission to expose foreground service notification.
+  final NotificationPermission notificationPermissionStatus =
+      await FlutterForegroundTask.checkNotificationPermission();
+  if (notificationPermissionStatus != NotificationPermission.granted) {
+    await FlutterForegroundTask.requestNotificationPermission();
   }
 }

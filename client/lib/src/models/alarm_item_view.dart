@@ -5,7 +5,7 @@ class AlarmItemView {
     this.id,
     this.time,
     this.scheduledDays,
-    this.isActive,
+    this.enabled,
     this.sound,
     this.vibrationChecked,
     this.syncWithMindr,
@@ -15,7 +15,7 @@ class AlarmItemView {
   String label = "test";
   DateTime time;
   List<int> scheduledDays;
-  bool isActive;
+  bool enabled;
   String sound;
   bool vibrationChecked;
   bool syncWithMindr;
@@ -29,7 +29,7 @@ class AlarmItemView {
       'time': time.toIso8601String(),
       'scheduledDays':
           scheduledDays.join(','), // Convert list to comma-separated string
-      'isEnabled': isActive ? 1 : 0,
+      'isEnabled': enabled ? 1 : 0,
       'sound': sound,
       'vibrationChecked': vibrationChecked ? 1 : 0,
       'syncWithMindr': syncWithMindr ? 1 : 0,
@@ -47,7 +47,7 @@ class AlarmItemView {
                     .split(',')
                     .map((item) => int.parse(item.toString()))
                     .toList(),
-        isActive = map['isEnabled'] == 1,
+        enabled = map['isEnabled'] == 1,
         sound = map['sound'],
         vibrationChecked = map['vibrationChecked'] == 1,
         syncWithMindr = map['syncWithMindr'] == 1;

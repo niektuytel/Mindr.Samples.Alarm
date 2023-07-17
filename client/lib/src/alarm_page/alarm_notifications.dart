@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -12,14 +13,14 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 
-import '../../main.dart';
+import '../../../main.dart';
 import '../models/alarm_brief_item.dart';
-import '../widgets/alarm_screen.dart';
+import 'alarm_screen.dart';
 import 'package:intl/intl.dart';
 import '../services/sqflite_service.dart';
-import 'alarm_page.dart';
-import 'services/foreground_task_handler.dart';
+import 'alarm_list_page.dart';
 
 final FlutterLocalNotificationsPlugin localNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -45,14 +46,20 @@ void notificationHandler(NotificationResponse response) async {
   }
 
   if (openAlarmOnClick == true) {
-    await SharedPreferencesService.setActiveAlarmItemId(alarmItemId);
-
     // Open the alarm screen, when app is in background.
     if (navigatorKey.currentState != null) {
       navigatorKey.currentState!
-          .push(MaterialPageRoute(builder: (_) => AlarmScreen(alarmItemId)));
+          .pushNamed('${AlarmScreen.routeName}/$alarmItemId');
     }
   }
+}
+
+// The callback function should always be a top-level function.
+@pragma('vm:entry-point')
+void alarmHandler() {
+  FlutterForegroundTask.setTaskHandler(AlarmForegroundTaskHandler());
+  // // The setTaskHandler function must be called to handle the task in the background.
+  // FlutterForegroundTask.setTaskHandler(AlarmTaskHandler());
 }
 
 class AlarmReceiver {
@@ -76,8 +83,21 @@ class AlarmReceiver {
     SqfliteService dbHelper = SqfliteService();
     AlarmItemView? alarmItem = await dbHelper.getAlarm(itemId);
 
-    if (alarmItem == null) {
+    if (alarmItem == null ||
+        alarmItem.time.isBefore(DateTime.now()) ||
+        alarmItem.enabled == false) {
       return;
+    }
+
+    // Check if current day is in the scheduledDays list
+    if (alarmItem.scheduledDays.isNotEmpty) {
+      int currentDay =
+          DateTime.now().weekday; // Get the current day of the week
+
+      if (!alarmItem.scheduledDays.contains(currentDay)) {
+        print('Today is not a scheduled day for this alarm');
+        return; // Return early if today is not a scheduled day
+      }
     }
 
     print('Upcoming Alarm triggered!');
@@ -111,48 +131,55 @@ class AlarmReceiver {
       'open_alarm_onclick': true,
     };
 
+    await SharedPreferencesService.setActiveAlarmItemId(alarmItem.id);
     await localNotificationsPlugin.show(
         id, 'Upcoming alarm', body, platformChannelSpecifics,
         payload: jsonEncode(payloadData));
   }
 
   static Future<bool> showNotification(int id) async {
-    print('Alarm triggered!');
+    print('Alarm triggered! id: $id');
     SqfliteService dbHelper = SqfliteService();
     AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
 
-    if (alarmItem == null) {
+    if (alarmItem == null ||
+        alarmItem.time.isBefore(DateTime.now()) ||
+        alarmItem.enabled == false) {
       return false;
     }
 
+    // Check if current day is in the scheduledDays list
+    if (alarmItem.scheduledDays.isNotEmpty) {
+      int currentDay =
+          DateTime.now().weekday; // Get the current day of the week
+
+      if (!alarmItem.scheduledDays.contains(currentDay)) {
+        print('Today is not a scheduled day for this alarm');
+        return false; // Return early if today is not a scheduled day
+      }
+    }
+
     // cancel the upcoming alarm notification
+    await localNotificationsPlugin.cancel(alarmItem.id);
     await localNotificationsPlugin.cancel(alarmItem.id * 1234);
 
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        id: 500,
-        channelId: 'notification_channel_id',
-        channelName: 'Foreground Notification',
-        channelDescription:
-            'This notification appears when the foreground service is running.',
+        id: id,
+        channelId: 'triggered_alarm',
+        channelName: 'Alarm',
         channelImportance: NotificationChannelImportance.LOW,
         priority: NotificationPriority.LOW,
-        iconData: const NotificationIconData(
-          resType: ResourceType.mipmap,
-          resPrefix: ResourcePrefix.ic,
-          name: 'launcher',
-          backgroundColor: Colors.orange,
-        ),
         buttons: [
           const NotificationButton(
-            id: 'sendButton',
-            text: 'Send',
-            textColor: Colors.orange,
+            id: 'snooze',
+            text: 'Snooze',
+            textColor: Color.fromARGB(255, 0, 0, 0),
           ),
           const NotificationButton(
-            id: 'testButton',
-            text: 'Test',
-            textColor: Colors.grey,
+            id: 'dismiss',
+            text: 'Stop',
+            textColor: Color.fromARGB(255, 0, 0, 0),
           ),
         ],
       ),
@@ -169,28 +196,23 @@ class AlarmReceiver {
       ),
     );
 
+    String body = alarmItem.label.isEmpty
+        ? formatDateTime(alarmItem.time)
+        : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
+
     // You can save data using the saveData function.
-    await FlutterForegroundTask.saveData(
-        key: 'alarmItemId', value: alarmItem.id);
-
+    await FlutterForegroundTask.saveData(key: 'alarmItemId', value: id);
+    await SharedPreferencesService.setActiveAlarmItemId(id);
     return FlutterForegroundTask.startService(
-      notificationTitle: 'Foreground Service is running',
-      notificationText: 'Tap to return to the app',
-      callback: startCallback,
+      notificationTitle: 'Alarm',
+      notificationText: body,
+      callback: alarmHandler,
     );
-
-    // if (await FlutterForegroundTask.isRunningService) {
-    //   return FlutterForegroundTask.restartService();
-    // } else {
-    //   return FlutterForegroundTask.startService(
-    //     notificationTitle: 'Foreground Service is running',
-    //     notificationText: 'Tap to return to the app',
-    //     callback: startCallback,
-    //   );
-    // }
   }
 
   static Future<void> stopAlarm(int id) async {
+    print('Stop alarm');
+
     SqfliteService dbHelper = SqfliteService();
     AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
 
@@ -198,12 +220,11 @@ class AlarmReceiver {
       return;
     }
 
-    print('Stop alarm');
-
     // cancel the upcoming alarm notification and the alarm
     await localNotificationsPlugin.cancel(alarmItem.id * 1234); // upcoming
     await localNotificationsPlugin.cancel(alarmItem.id);
     FlutterForegroundTask.stopService();
+    SharedPreferencesService.removeActiveAlarmId();
   }
 
   static Future<void> snoozeAlarm(int id) async {
@@ -222,10 +243,55 @@ class AlarmReceiver {
     FlutterForegroundTask.stopService();
 
     // show snoozed alarm
-    scheduleSnoozedNotification(alarmItem.id);
+    rescheduleAlarmOnSnooze(alarmItem.id);
   }
 
-  static Future<void> scheduleSnoozedNotification(int id) async {
+  static Future<void> scheduleAlarm(AlarmItemView alarm) async {
+    int alarmId = alarm.id;
+    int preAlarmId = (alarm.id * 1234);
+    DateTime alarmTime = alarm.time; //DateTime.now().add(Duration(seconds: 5));
+    DateTime preAlarmTime = alarm.time.subtract(Duration(hours: 2));
+
+    // only once
+    if (alarm.scheduledDays.isEmpty) {
+      await AndroidAlarmManager.oneShotAt(
+          preAlarmTime, preAlarmId, AlarmReceiver.showUpcomingNotification,
+          exact: true,
+          wakeup: true,
+          rescheduleOnReboot: true,
+          alarmClock: true,
+          allowWhileIdle: true);
+
+      await AndroidAlarmManager.oneShotAt(
+          alarm.time, alarm.id, AlarmReceiver.showNotification,
+          exact: true,
+          wakeup: true,
+          rescheduleOnReboot: true,
+          alarmClock: true,
+          allowWhileIdle: true);
+
+      return;
+    }
+
+    // recurring
+    await AndroidAlarmManager.periodic(const Duration(hours: 24), preAlarmId,
+        AlarmReceiver.showUpcomingNotification,
+        exact: true,
+        wakeup: true,
+        rescheduleOnReboot: true,
+        startAt: preAlarmTime,
+        allowWhileIdle: true);
+
+    await AndroidAlarmManager.periodic(
+        const Duration(hours: 24), alarmId, AlarmReceiver.showNotification,
+        exact: true,
+        wakeup: true,
+        rescheduleOnReboot: true,
+        startAt: alarmTime,
+        allowWhileIdle: true);
+  }
+
+  static Future<void> rescheduleAlarmOnSnooze(int id) async {
     SqfliteService dbHelper = SqfliteService();
     AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
 
@@ -283,12 +349,76 @@ class AlarmReceiver {
   }
 }
 
-////////////////////////// FOREGROUND SERVICES //////////////////////////
+class AlarmForegroundTaskHandler extends TaskHandler {
+  SendPort? _sendPort;
+  int _eventCount = 0;
+  int _alarmItemId = 0;
 
-// The callback function should always be a top-level function.
-@pragma('vm:entry-point')
-void startCallback() {
-  FlutterForegroundTask.setTaskHandler(AlarmForegroundTaskHandler());
-  // // The setTaskHandler function must be called to handle the task in the background.
-  // FlutterForegroundTask.setTaskHandler(AlarmTaskHandler());
+  // Called when the task is started.
+  @override
+  Future<void> onStart(DateTime timestamp, SendPort? sendPort) async {
+    FlutterForegroundTask.wakeUpScreen();
+    FlutterForegroundTask.setOnLockScreenVisibility(true);
+    //
+
+    _sendPort = sendPort;
+    _alarmItemId =
+        await FlutterForegroundTask.getData<int>(key: 'alarmItemId') as int;
+
+    // Sound
+    final audioPlayer = AudioPlayer();
+    Duration? audioDuration = await audioPlayer.setAsset('assets/marimba.mp3');
+    audioPlayer.setLoopMode(LoopMode.all);
+    audioPlayer.play();
+    Timer(Duration(minutes: 20), () async {
+      // Stop playback after 20 minutes
+      await audioPlayer.stop();
+      await AudioPlayer.clearAssetCache();
+    });
+  }
+
+  // Called every [interval] milliseconds in [ForegroundTaskOptions].
+  @override
+  Future<void> onRepeatEvent(DateTime timestamp, SendPort? sendPort) async {
+    // FlutterForegroundTask.updateService(
+    //   notificationTitle: 'Alarm',
+    //   notificationText: 'eventCount: $_eventCount',
+    // );
+
+    // Vibrate 1x
+    Vibration.vibrate();
+
+    // Send data to the main isolate.
+    sendPort?.send(_eventCount);
+    _eventCount++;
+  }
+
+  // Called when the notification button on the Android platform is pressed.
+  @override
+  Future<void> onDestroy(DateTime timestamp, SendPort? sendPort) async {
+    print('onDestroy');
+  }
+
+  // Called when the notification button on the Android platform is pressed.
+  @override
+  Future<void> onNotificationButtonPressed(String actionId) async {
+    print('onNotificationButtonPressed >> $actionId');
+
+    // This is called when a notification or its action is tapped.
+    if (actionId == 'snooze') {
+      await AlarmReceiver.snoozeAlarm(_alarmItemId);
+    } else if (actionId == 'dismiss') {
+      await AlarmReceiver.stopAlarm(_alarmItemId);
+    }
+  }
+
+  // Called when the notification itself on the Android platform is pressed.
+  //
+  // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
+  // this function to be called.
+  @override
+  void onNotificationPressed() async {
+    print('onNotificationPressed >> $_alarmItemId');
+    FlutterForegroundTask.launchApp('${AlarmScreen.routeName}/$_alarmItemId');
+  }
 }

@@ -7,7 +7,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slidable_button/slidable_button.dart';
 
-import '../alarm_page/alarm_notifications.dart';
+import 'alarm_notifications.dart';
 import '../services/sqflite_service.dart';
 
 class AlarmScreen extends StatefulWidget {
