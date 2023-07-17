@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:alarm/alarm.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:client/src/models/alarm_item_view.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:client/src/services/shared_preferences_service.dart';
@@ -83,9 +84,7 @@ class AlarmReceiver {
     SqfliteService dbHelper = SqfliteService();
     AlarmItemView? alarmItem = await dbHelper.getAlarm(itemId);
 
-    if (alarmItem == null ||
-        alarmItem.time.isBefore(DateTime.now()) ||
-        alarmItem.enabled == false) {
+    if (alarmItem == null || alarmItem.enabled == false) {
       return;
     }
 
@@ -142,9 +141,7 @@ class AlarmReceiver {
     SqfliteService dbHelper = SqfliteService();
     AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
 
-    if (alarmItem == null ||
-        alarmItem.time.isBefore(DateTime.now()) ||
-        alarmItem.enabled == false) {
+    if (alarmItem == null || alarmItem.enabled == false) {
       return false;
     }
 
@@ -249,11 +246,11 @@ class AlarmReceiver {
   static Future<void> scheduleAlarm(AlarmItemView alarm) async {
     int alarmId = alarm.id;
     int preAlarmId = (alarm.id * 1234);
-    DateTime alarmTime = alarm.time; //DateTime.now().add(Duration(seconds: 5));
+    DateTime alarmTime = DateTime.now().add(Duration(seconds: 5));
     DateTime preAlarmTime = alarm.time.subtract(Duration(hours: 2));
 
-    // only once
     if (alarm.scheduledDays.isEmpty) {
+      // only once
       await AndroidAlarmManager.oneShotAt(
           preAlarmTime, preAlarmId, AlarmReceiver.showUpcomingNotification,
           exact: true,
@@ -269,26 +266,24 @@ class AlarmReceiver {
           rescheduleOnReboot: true,
           alarmClock: true,
           allowWhileIdle: true);
+    } else {
+      // recurring
+      await AndroidAlarmManager.periodic(const Duration(hours: 24), preAlarmId,
+          AlarmReceiver.showUpcomingNotification,
+          exact: true,
+          wakeup: true,
+          rescheduleOnReboot: true,
+          startAt: preAlarmTime,
+          allowWhileIdle: true);
 
-      return;
+      await AndroidAlarmManager.periodic(
+          const Duration(hours: 24), alarmId, AlarmReceiver.showNotification,
+          exact: true,
+          wakeup: true,
+          rescheduleOnReboot: true,
+          startAt: alarmTime,
+          allowWhileIdle: true);
     }
-
-    // recurring
-    await AndroidAlarmManager.periodic(const Duration(hours: 24), preAlarmId,
-        AlarmReceiver.showUpcomingNotification,
-        exact: true,
-        wakeup: true,
-        rescheduleOnReboot: true,
-        startAt: preAlarmTime,
-        allowWhileIdle: true);
-
-    await AndroidAlarmManager.periodic(
-        const Duration(hours: 24), alarmId, AlarmReceiver.showNotification,
-        exact: true,
-        wakeup: true,
-        rescheduleOnReboot: true,
-        startAt: alarmTime,
-        allowWhileIdle: true);
   }
 
   static Future<void> rescheduleAlarmOnSnooze(int id) async {
@@ -366,14 +361,38 @@ class AlarmForegroundTaskHandler extends TaskHandler {
         await FlutterForegroundTask.getData<int>(key: 'alarmItemId') as int;
 
     // Sound
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration(
+      avAudioSessionCategory: AVAudioSessionCategory.playback,
+      avAudioSessionMode: AVAudioSessionMode.defaultMode,
+      avAudioSessionRouteSharingPolicy:
+          AVAudioSessionRouteSharingPolicy.defaultPolicy,
+      androidAudioAttributes: AndroidAudioAttributes(
+        usage: AndroidAudioUsage.alarm,
+        contentType: AndroidAudioContentType.speech,
+        flags: AndroidAudioFlags.none,
+      ),
+      androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+      androidWillPauseWhenDucked: true,
+    ));
+
     final audioPlayer = AudioPlayer();
-    Duration? audioDuration = await audioPlayer.setAsset('assets/marimba.mp3');
+
+    try {
+      await audioPlayer.setAudioSource(
+        AudioSource.asset('assets/marimba.mp3'),
+      );
+    } catch (e) {
+      // catch load errors: 404, invalid url ...
+      print("An error occurred $e");
+    }
+
     audioPlayer.setLoopMode(LoopMode.all);
     audioPlayer.play();
+
     Timer(Duration(minutes: 20), () async {
       // Stop playback after 20 minutes
       await audioPlayer.stop();
-      await AudioPlayer.clearAssetCache();
     });
   }
 

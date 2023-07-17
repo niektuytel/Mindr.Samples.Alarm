@@ -26,6 +26,7 @@ dependencies:
   device_info_plus: any
   flutter_timezone: any
   just_audio: ^0.9.34
+  audio_session: any
   http: any
   image: any
   flutter_localizations:
