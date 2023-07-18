@@ -41,19 +41,19 @@ class _AlarmListPageState extends State<AlarmListPage> {
   void initState() {
     super.initState();
 
-    // Foreground task
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // TODO: maybe later use this on specific versions of android
-      await _requestPermissionForAndroid();
+    // // Foreground task
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   // TODO: maybe later use this on specific versions of android
+    //   await _requestPermissionForAndroid();
 
-      // _initForegroundTask();
+    //   // _initForegroundTask();
 
-      // // You can get the previous ReceivePort without restarting the service.
-      // if (await FlutterForegroundTask.isRunningService) {
-      //   final newReceivePort = FlutterForegroundTask.receivePort;
-      //   _registerReceivePort(newReceivePort);
-      // }
-    });
+    //   // // You can get the previous ReceivePort without restarting the service.
+    //   // if (await FlutterForegroundTask.isRunningService) {
+    //   //   final newReceivePort = FlutterForegroundTask.receivePort;
+    //   //   _registerReceivePort(newReceivePort);
+    //   // }
+    // });
 
     SqfliteService().getAlarms().then((alarms) {
       setState(() {

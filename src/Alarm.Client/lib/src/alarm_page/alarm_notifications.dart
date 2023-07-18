@@ -246,7 +246,7 @@ class AlarmReceiver {
   static Future<void> scheduleAlarm(AlarmItemView alarm) async {
     int alarmId = alarm.id;
     int preAlarmId = (alarm.id * 1234);
-    DateTime alarmTime = DateTime.now().add(Duration(seconds: 5));
+    DateTime alarmTime = alarm.time; //.now().add(Duration(seconds: 5));
     DateTime preAlarmTime = alarm.time.subtract(Duration(hours: 2));
 
     if (alarm.scheduledDays.isEmpty) {
