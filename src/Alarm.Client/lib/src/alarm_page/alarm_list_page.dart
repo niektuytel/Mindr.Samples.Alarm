@@ -1,16 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
-import 'dart:ui';
 
 import 'package:intl/intl.dart';
-import 'package:client/src/alarm_page/alarm_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import '../../main.dart';
 import '../mindr_page/mindr_view.dart';
-import '../services/alarm_client.dart';
-import '../services/shared_preferences_service.dart';
+import '../services/alarm_service.dart';
+import '../services/alarm_handler.dart';
 import '../services/sqflite_service.dart';
 import '../models/alarm_item_view.dart';
 
@@ -129,7 +125,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
               widget.items.add(newAlarm);
             });
 
-            await AlarmClient.insertAlarm(newAlarm);
+            await AlarmService.insertAlarm(newAlarm);
           }
         },
       ),
@@ -205,7 +201,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
                   item.time = item.time.add(Duration(days: 1));
                 }
               });
-              await AlarmClient.updateAlarm(item); // update in the database
+              await AlarmService.updateAlarm(item); // update in the database
             }
           },
           child: Text(
@@ -248,7 +244,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             // Start a new one
             _daySelectionTimer = Timer(Duration(seconds: 3), () async {
               // When the timer fires, update the database
-              await AlarmClient.updateAlarm(item); // update in the database
+              await AlarmService.updateAlarm(item); // update in the database
             });
           },
           activeColor: Colors.white,
@@ -275,7 +271,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
               // Start a new one
               _daySelectionTimer = Timer(Duration(seconds: 3), () async {
                 // When the timer fires, update the database
-                await AlarmClient.updateAlarm(item); // update in the database
+                await AlarmService.updateAlarm(item); // update in the database
               });
             });
           }),
@@ -285,7 +281,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
               Expanded(
                 child: TextButton.icon(
                   onPressed: () async {
-                    await AlarmClient.deleteAlarm(item.id);
+                    await AlarmService.deleteAlarm(item.id);
                     setState(() {
                       widget.items.remove(item);
                     });
@@ -345,7 +341,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
           // Start a new one
           _daySelectionTimer = Timer(Duration(seconds: 3), () async {
             // When the timer fires, update the database
-            await AlarmClient.updateAlarm(item); // update in the database
+            await AlarmService.updateAlarm(item); // update in the database
           });
         },
       ),
@@ -369,7 +365,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             // Start a new one
             _daySelectionTimer = Timer(Duration(seconds: 3), () async {
               // When the timer fires, update the database
-              await AlarmClient.updateAlarm(item); // update in the database
+              await AlarmService.updateAlarm(item); // update in the database
             });
           });
         },

@@ -1,14 +1,8 @@
-import 'dart:convert';
-import 'dart:isolate';
-
-import 'package:client/src/models/alarm_brief_item.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slidable_button/slidable_button.dart';
 
-import '../services/alarm_client.dart';
-import '../services/sqflite_service.dart';
+import '../services/alarm_service.dart';
+import '../services/alarm_handler.dart';
 
 class AlarmScreen extends StatefulWidget {
   // below 0 is wrong value
@@ -90,7 +84,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                     onChanged: (position) {
                       setState(() {
                         if (position == SlidableButtonPosition.end) {
-                          AlarmClient.stopAlarm(alarmItemId);
+                          AlarmService.stopAlarm(alarmItemId);
                           Navigator.of(context).pop();
                         }
                       });

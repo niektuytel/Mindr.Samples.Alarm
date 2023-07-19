@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:client/src/models/alarm_brief_item.dart';
+import 'package:mindr.alarm/src/models/alarm_brief_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferencesService {

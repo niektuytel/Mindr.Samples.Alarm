@@ -1,4 +1,4 @@
-name: client
+name: mindr.alarm
 description: A new Flutter project.
 
 # Prevent accidental publishing to pub.dev.
@@ -26,8 +26,10 @@ dependencies:
   device_info_plus: any
   flutter_timezone: any
   just_audio: ^0.9.34
+  intl: any
   audio_session: any
   http: any
+  path: any
   image: any
   flutter_localizations:
     sdk: flutter

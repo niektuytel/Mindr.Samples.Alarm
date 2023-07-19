@@ -1,13 +1,10 @@
-import 'package:client/src/models/alarm_item_view.dart';
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:mindr.alarm/src/models/alarm_item_view.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
-// ignore: depend_on_referenced_packages
+
 import 'package:path/path.dart' as path;
 import 'dart:io' as io;
 import 'dart:async';
-
-import 'alarm_client.dart';
 
 class SqfliteService {
   static Database? _db;

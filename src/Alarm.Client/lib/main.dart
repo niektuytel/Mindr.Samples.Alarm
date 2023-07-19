@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
-import 'package:client/src/services/shared_preferences_service.dart';
-import 'package:client/src/alarm_page/alarm_screen.dart';
-import 'package:client/src/alarm_page/alarm_list_page.dart';
+import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
+import 'package:mindr.alarm/src/alarm_page/alarm_screen.dart';
+import 'package:mindr.alarm/src/alarm_page/alarm_list_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
