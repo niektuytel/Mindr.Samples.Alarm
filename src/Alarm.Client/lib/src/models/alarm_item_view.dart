@@ -26,6 +26,7 @@ class AlarmItemView {
   // columns in the database.
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'time': time.toIso8601String(),
       'label': label,
       'scheduledDays':

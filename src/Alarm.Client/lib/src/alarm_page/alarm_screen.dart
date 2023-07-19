@@ -90,7 +90,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                     onChanged: (position) {
                       setState(() {
                         if (position == SlidableButtonPosition.end) {
-                          AlarmHandler.stopAlarm(alarmItemId);
+                          AlarmClient.stopAlarm(alarmItemId);
                           Navigator.of(context).pop();
                         }
                       });

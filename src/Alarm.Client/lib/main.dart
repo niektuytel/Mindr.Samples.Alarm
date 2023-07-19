@@ -35,18 +35,6 @@ void main() async {
     initialRoute = '${AlarmScreen.routeName}/$alarmItemId';
   }
 
-  // var initialRoute = WidgetsBinding.instance?.window.defaultRouteName ?? AlarmListPage.routeName;
-  // var pathElements = initialRoute.split('/');
-
-  // int? alarmItemId;
-  // if (pathElements.length > 2 && pathElements[1] == AlarmScreen.routeName) {
-  //   alarmItemId = int.tryParse(pathElements[2]);
-  //   if (alarmItemId == null) {
-  //     // Handle error in parsing alarmItemId
-  //     initialRoute = AlarmListPage.routeName;
-  //   }
-  // }
-
   runApp(
     MaterialApp(
       initialRoute: initialRoute,
@@ -73,3 +61,14 @@ void main() async {
     ),
   );
 }
+
+
+// TODO: When set alarm in range of 2 hours from the time it's been set the upcoming alarm notification is shown.
+//    But when closing app and removing it from the background, the upcoming alarm notification is removed from notifications. 
+// Debug:
+//      Tested on Redmi 8 see this issue, still when give consent on battery optimization, the issue is not resolved.
+
+// TODO: When the alarm is fired and the app is in the background, and we click on the alarm notification. 
+//    The alarm screen is not shown to put the alarm off.
+
+// TODO: Show alarm screen when the alarm is fired, to stop the alarm.

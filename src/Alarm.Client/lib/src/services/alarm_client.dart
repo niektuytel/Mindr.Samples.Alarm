@@ -41,16 +41,17 @@ void notificationHandler(NotificationResponse response) async {
     if (response.actionId == 'snooze') {
       await AlarmHandler.snoozeAlarm(alarmItemId);
     } else if (response.actionId == 'dismiss') {
-      await AlarmHandler.stopAlarm(alarmItemId);
+      await AlarmClient.stopAlarm(alarmItemId);
     }
 
     return;
   }
 
+  await SharedPreferencesService.setActiveAlarmItemId(alarmItemId);
   if (openAlarmOnClick == true) {
     // Open the alarm screen, when app is in background.
     if (navigatorKey.currentState != null) {
-      navigatorKey.currentState!
+      await navigatorKey.currentState!
           .pushNamed('${AlarmScreen.routeName}/$alarmItemId');
     }
   }
@@ -66,18 +67,67 @@ void alarmHandler() {
 
 class AlarmClient {
   static Future<bool> insertAlarm(AlarmItemView alarm) async {
+    print('Insert alarm: ${alarm.toMap().toString()}');
     await SqfliteService().insertAlarm(alarm);
+
+    // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
+
     return await AlarmHandler.scheduleAlarm(alarm);
   }
 
   static Future<bool> updateAlarm(AlarmItemView alarm) async {
+    print('Updating alarm: ${alarm.toMap().toString()}');
     await SqfliteService().updateAlarm(alarm);
-    return await AlarmHandler.rescheduleAlarm(alarm);
+
+    // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
+
+    return await AlarmHandler.scheduleAlarm(alarm);
+  }
+
+  static Future<void> stopAlarm(int id) async {
+    try {
+      print('Stop alarm: $id');
+      var alarmItem = await AlarmHandler.stopAlarm(id);
+
+      // Set next alarm if alarm is recurring
+      await handleNextAlarmIfExist(alarmItem);
+
+      // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
+    } catch (error) {
+      print('An error occurred in stopAlarm: $error');
+    }
+  }
+
+  static Future<void> handleNextAlarmIfExist(AlarmItemView? item) async {
+    if (item == null) {
+      return;
+    }
+
+    if (item.enabled && item.scheduledDays.isNotEmpty) {
+      var dayOfWeek = DateTime.now().weekday;
+      var nextDay = item.scheduledDays.firstWhere(
+          (element) => element > dayOfWeek,
+          orElse: () => item.scheduledDays.first);
+
+      // calculate the number of days to add
+      int daysToAdd =
+          nextDay > dayOfWeek ? nextDay - dayOfWeek : 7 - dayOfWeek + nextDay;
+
+      item.time = item.time.add(Duration(days: daysToAdd));
+
+      var updateStatus = await updateAlarm(item);
+      if (!updateStatus) {
+        print('Failed to update the alarm');
+      }
+    }
   }
 
   static Future<void> deleteAlarm(int id) async {
-    await SqfliteService().deleteAlarm(id);
+    print('Delete alarm: ${id}');
+    // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
+
     await AlarmHandler.stopAlarm(id);
+    await SqfliteService().deleteAlarm(id);
   }
 }
 
@@ -148,7 +198,6 @@ class AlarmHandler {
       'open_alarm_onclick': true,
     };
 
-    await SharedPreferencesService.setActiveAlarmItemId(alarmItem.id);
     await localNotificationsPlugin.show(
         id, 'Upcoming alarm', body, platformChannelSpecifics,
         payload: jsonEncode(payloadData));
@@ -225,23 +274,25 @@ class AlarmHandler {
     );
   }
 
-  static Future<void> stopAlarm(int id) async {
+  static Future<AlarmItemView?> stopAlarm(int id) async {
     print('Stop alarm');
 
     SqfliteService dbHelper = SqfliteService();
     AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
 
     if (alarmItem == null) {
-      return;
+      print('AlarmItem is null');
+      return null;
     }
 
     // cancel the upcoming alarm notification and the alarm
-    FlutterForegroundTask.stopService();
-    SharedPreferencesService.removeActiveAlarmId();
+    await SharedPreferencesService.removeActiveAlarmId();
     await localNotificationsPlugin.cancel(alarmItem.id * 1234); // upcoming
     await localNotificationsPlugin.cancel(alarmItem.id);
     await AndroidAlarmManager.cancel(alarmItem.id * 1234);
     await AndroidAlarmManager.cancel(alarmItem.id);
+    await FlutterForegroundTask.stopService();
+    return alarmItem;
   }
 
   static Future<void> snoozeAlarm(int id) async {
@@ -257,10 +308,10 @@ class AlarmHandler {
     // cancel the upcoming alarm notification and the alarm
     await localNotificationsPlugin.cancel(alarmItem.id * 1234);
     await localNotificationsPlugin.cancel(alarmItem.id);
-    FlutterForegroundTask.stopService();
+    await FlutterForegroundTask.stopService();
 
     // show snoozed alarm
-    rescheduleAlarmOnSnooze(alarmItem.id);
+    await rescheduleAlarmOnSnooze(alarmItem.id);
   }
 
   static Future<bool> scheduleAlarm(AlarmItemView alarm) async {
@@ -268,7 +319,7 @@ class AlarmHandler {
 
     if (!alarm.enabled) {
       debugPrint('Alarm is not enabled. Cancelling...');
-      await stopAlarm(alarm.id);
+      await AlarmClient.stopAlarm(alarm.id);
       return false;
     }
 
@@ -310,12 +361,6 @@ class AlarmHandler {
     }
 
     return isSuccess;
-  }
-
-  static Future<bool> rescheduleAlarm(AlarmItemView alarm) async {
-    debugPrint('Reset alarm with id: ${alarm.id}');
-    await stopAlarm(alarm.id);
-    return await scheduleAlarm(alarm);
   }
 
   static Future<void> rescheduleAlarmOnSnooze(int id) async {
@@ -419,8 +464,8 @@ class AlarmForegroundTaskHandler extends TaskHandler {
       print("An error occurred $e");
     }
 
-    audioPlayer.setLoopMode(LoopMode.all);
-    audioPlayer.play();
+    await audioPlayer.setLoopMode(LoopMode.all);
+    await audioPlayer.play();
 
     Timer(Duration(minutes: 20), () async {
       // Stop playback after 20 minutes
@@ -437,7 +482,7 @@ class AlarmForegroundTaskHandler extends TaskHandler {
     // );
 
     // Vibrate 1x
-    Vibration.vibrate();
+    await Vibration.vibrate();
 
     // Send data to the main isolate.
     sendPort?.send(_eventCount);
@@ -459,7 +504,7 @@ class AlarmForegroundTaskHandler extends TaskHandler {
     if (actionId == 'snooze') {
       await AlarmHandler.snoozeAlarm(_alarmItemId);
     } else if (actionId == 'dismiss') {
-      await AlarmHandler.stopAlarm(_alarmItemId);
+      await AlarmClient.stopAlarm(_alarmItemId);
     }
   }
 
