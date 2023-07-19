@@ -7,7 +7,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slidable_button/slidable_button.dart';
 
-import 'alarm_notifications.dart';
+import '../services/alarm_client.dart';
 import '../services/sqflite_service.dart';
 
 class AlarmScreen extends StatefulWidget {
@@ -90,7 +90,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                     onChanged: (position) {
                       setState(() {
                         if (position == SlidableButtonPosition.end) {
-                          AlarmReceiver.stopAlarm(alarmItemId);
+                          AlarmHandler.stopAlarm(alarmItemId);
                           Navigator.of(context).pop();
                         }
                       });
@@ -99,7 +99,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                   SizedBox(height: 20), // add a bit of spacing
                   ElevatedButton(
                     onPressed: () {
-                      AlarmReceiver.snoozeAlarm(alarmItemId);
+                      AlarmHandler.snoozeAlarm(alarmItemId);
                       Navigator.of(context).pop();
                     },
                     child: Text('Snooze'),

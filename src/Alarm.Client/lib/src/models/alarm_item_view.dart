@@ -27,6 +27,7 @@ class AlarmItemView {
   Map<String, dynamic> toMap() {
     return {
       'time': time.toIso8601String(),
+      'label': label,
       'scheduledDays':
           scheduledDays.join(','), // Convert list to comma-separated string
       'isEnabled': enabled ? 1 : 0,
@@ -40,6 +41,7 @@ class AlarmItemView {
   AlarmItemView.fromMap(Map<String, dynamic> map)
       : id = map['id'],
         time = DateTime.parse(map['time']),
+        label = map['label'],
         scheduledDays =
             map['scheduledDays'] == null || map['scheduledDays'].isEmpty
                 ? []

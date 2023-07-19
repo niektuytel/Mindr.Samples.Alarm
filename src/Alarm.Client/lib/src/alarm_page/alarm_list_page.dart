@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import '../../main.dart';
 import '../mindr_page/mindr_view.dart';
-import 'alarm_notifications.dart';
+import '../services/alarm_client.dart';
 import '../services/shared_preferences_service.dart';
 import '../services/sqflite_service.dart';
 import '../models/alarm_item_view.dart';
@@ -36,6 +36,8 @@ class _AlarmListPageState extends State<AlarmListPage> {
   late final ScrollController _scrollController;
   Color _appBarColor = Colors.transparent;
   int alarmId = 0;
+  Timer? _daySelectionTimer;
+  Timer? _vibrationChangeTimer;
 
   @override
   void initState() {
@@ -72,7 +74,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
   @override
   Widget build(BuildContext context) {
-    AlarmReceiver.init(context);
+    AlarmHandler.init(context);
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
 
     return Scaffold(
@@ -92,10 +94,16 @@ class _AlarmListPageState extends State<AlarmListPage> {
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
+          DateTime now = DateTime.now();
+          DateTime after15Min = now.add(Duration(minutes: 15));
+          TimeOfDay initialTime =
+              TimeOfDay(hour: after15Min.hour, minute: after15Min.minute);
+
           TimeOfDay? selectedTime = await showTimePicker(
             context: context,
-            initialTime: TimeOfDay.now(),
+            initialTime: initialTime,
           );
+
           if (selectedTime != null) {
             AlarmItemView newAlarm = AlarmItemView(
               0, // Change to appropriate ID based on your requirements
@@ -115,8 +123,8 @@ class _AlarmListPageState extends State<AlarmListPage> {
             setState(() {
               widget.items.add(newAlarm);
             });
-            SqfliteService()
-                .insertAlarm(newAlarm); // Insert new alarm into the database
+
+            await AlarmClient.insertAlarm(newAlarm);
           }
         },
       ),
@@ -188,8 +196,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
                   selectedTime.minute,
                 );
               });
-              await SqfliteService()
-                  .updateAlarm(item); // update in the database
+              await AlarmClient.updateAlarm(item); // update in the database
             }
           },
           child: Text(
@@ -226,7 +233,14 @@ class _AlarmListPageState extends State<AlarmListPage> {
           value: item.enabled,
           onChanged: (newValue) {
             setState(() => item.enabled = newValue);
-            SqfliteService().updateAlarm(item); // update in the database
+
+            // Cancel the previous timer
+            _daySelectionTimer?.cancel();
+            // Start a new one
+            _daySelectionTimer = Timer(Duration(seconds: 3), () async {
+              // When the timer fires, update the database
+              await AlarmClient.updateAlarm(item); // update in the database
+            });
           },
           activeColor: Colors.white,
         ),
@@ -242,19 +256,89 @@ class _AlarmListPageState extends State<AlarmListPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [..._buildDaySelectors(item, dayNames)]),
+          _buildLabelInput(item),
           _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) {
             setState(() {
               item.vibrationChecked = value!;
-              SqfliteService().updateAlarm(item); // update in the database
+
+              // Cancel the previous timer
+              _daySelectionTimer?.cancel();
+              // Start a new one
+              _daySelectionTimer = Timer(Duration(seconds: 3), () async {
+                // When the timer fires, update the database
+                await AlarmClient.updateAlarm(item); // update in the database
+              });
             });
           }),
-          _buildSwitchRow(item.syncWithMindr, 'Bind with Mindr', (value) {
-            setState(() {
-              item.syncWithMindr = value!;
-              SqfliteService().updateAlarm(item); // update in the database
-            });
-          }),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () async {
+                    await AlarmClient.deleteAlarm(item.id);
+                    setState(() {
+                      widget.items.remove(item);
+                    });
+                  },
+                  icon: Icon(Icons.delete, color: Colors.white),
+                  label: Text(
+                    'Delete',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () async {
+                    setState(() {
+                      item.syncWithMindr = !item.syncWithMindr;
+                      SqfliteService()
+                          .updateAlarm(item); // update in the database
+                    });
+                  },
+                  icon: Icon(item.syncWithMindr ? Icons.link : Icons.link_off,
+                      color: Colors.white),
+                  label: Text(
+                    'Bind with Mindr',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLabelInput(AlarmItemView item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        initialValue: item.label,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          labelText: 'Label',
+          labelStyle: TextStyle(color: Colors.white),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.white),
+          ),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.white),
+          ),
+        ),
+        onChanged: (value) {
+          item.label = value;
+
+          // Cancel the previous timer
+          _daySelectionTimer?.cancel();
+          // Start a new one
+          _daySelectionTimer = Timer(Duration(seconds: 3), () async {
+            // When the timer fires, update the database
+            await AlarmClient.updateAlarm(item); // update in the database
+          });
+        },
       ),
     );
   }
@@ -270,7 +354,14 @@ class _AlarmListPageState extends State<AlarmListPage> {
             } else {
               item.scheduledDays.add(index + 1);
             }
-            SqfliteService().updateAlarm(item); // update in the database
+
+            // Cancel the previous timer
+            _daySelectionTimer?.cancel();
+            // Start a new one
+            _daySelectionTimer = Timer(Duration(seconds: 3), () async {
+              // When the timer fires, update the database
+              await AlarmClient.updateAlarm(item); // update in the database
+            });
           });
         },
         child: Container(
@@ -314,6 +405,10 @@ class _AlarmListPageState extends State<AlarmListPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _daySelectionTimer
+        ?.cancel(); // make sure to dispose the timer when not needed
+    _vibrationChangeTimer
+        ?.cancel(); // make sure to dispose the timer when not needed
     super.dispose();
   }
 
@@ -332,36 +427,36 @@ class _AlarmListPageState extends State<AlarmListPage> {
   }
 }
 
-Future<void> _requestPermissionForAndroid() async {
-  if (!Platform.isAndroid) {
-    return;
-  }
+// Future<void> _requestPermissionForAndroid() async {
+//   if (!Platform.isAndroid) {
+//     return;
+//   }
 
-  // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
-  // onNotificationPressed function to be called.
-  //
-  // When the notification is pressed while permission is denied,
-  // the onNotificationPressed function is not called and the app opens.
-  //
-  // If you do not use the onNotificationPressed or launchApp function,
-  // you do not need to write this code.
-  if (!await FlutterForegroundTask.canDrawOverlays) {
-    // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
-    await FlutterForegroundTask.openSystemAlertWindowSettings();
-  }
+//   // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
+//   // onNotificationPressed function to be called.
+//   //
+//   // When the notification is pressed while permission is denied,
+//   // the onNotificationPressed function is not called and the app opens.
+//   //
+//   // If you do not use the onNotificationPressed or launchApp function,
+//   // you do not need to write this code.
+//   if (!await FlutterForegroundTask.canDrawOverlays) {
+//     // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
+//     await FlutterForegroundTask.openSystemAlertWindowSettings();
+//   }
 
-  // Android 12 or higher, there are restrictions on starting a foreground service.
-  //
-  // To restart the service on device reboot or unexpected problem, you need to allow below permission.
-  if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
-    // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
-    await FlutterForegroundTask.requestIgnoreBatteryOptimization();
-  }
+//   // Android 12 or higher, there are restrictions on starting a foreground service.
+//   //
+//   // To restart the service on device reboot or unexpected problem, you need to allow below permission.
+//   if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+//     // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
+//     await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+//   }
 
-  // Android 13 and higher, you need to allow notification permission to expose foreground service notification.
-  final NotificationPermission notificationPermissionStatus =
-      await FlutterForegroundTask.checkNotificationPermission();
-  if (notificationPermissionStatus != NotificationPermission.granted) {
-    await FlutterForegroundTask.requestNotificationPermission();
-  }
-}
+//   // Android 13 and higher, you need to allow notification permission to expose foreground service notification.
+//   final NotificationPermission notificationPermissionStatus =
+//       await FlutterForegroundTask.checkNotificationPermission();
+//   if (notificationPermissionStatus != NotificationPermission.granted) {
+//     await FlutterForegroundTask.requestNotificationPermission();
+//   }
+// }

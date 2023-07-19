@@ -7,7 +7,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io' as io;
 import 'dart:async';
 
-import '../alarm_page/alarm_notifications.dart';
+import 'alarm_client.dart';
 
 class SqfliteService {
   static Database? _db;
@@ -31,6 +31,7 @@ class SqfliteService {
     await db.execute("CREATE TABLE alarm("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
         "time TEXT, "
+        "label TEXT, "
         "scheduledDays TEXT, "
         "isEnabled INTEGER, "
         "sound TEXT, "
@@ -68,11 +69,6 @@ class SqfliteService {
         await dbClient.rawQuery('SELECT MAX(id)+1 as id FROM alarm'));
     alarm.id = id ?? 1;
     int res = await dbClient.insert("alarm", alarm.toMap());
-
-    if (alarm.enabled) {
-      await AlarmReceiver.scheduleAlarm(alarm);
-    }
-
     return res;
   }
 
@@ -80,14 +76,6 @@ class SqfliteService {
     var dbClient = await db;
     int res = await dbClient
         .update("alarm", alarm.toMap(), where: "id = ?", whereArgs: [alarm.id]);
-
-    if (alarm.enabled) {
-      await AndroidAlarmManager.oneShotAt(
-          alarm.time, alarm.id, AlarmReceiver.showNotification);
-    } else {
-      await AndroidAlarmManager.cancel(alarm.id);
-    }
-
     return res;
   }
 

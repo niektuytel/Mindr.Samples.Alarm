@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 
 import 'package:alarm/alarm.dart';
 import 'package:audio_session/audio_session.dart';
@@ -18,10 +19,10 @@ import 'package:vibration/vibration.dart';
 
 import '../../../main.dart';
 import '../models/alarm_brief_item.dart';
-import 'alarm_screen.dart';
+import '../alarm_page/alarm_screen.dart';
 import 'package:intl/intl.dart';
-import '../services/sqflite_service.dart';
-import 'alarm_list_page.dart';
+import 'sqflite_service.dart';
+import '../alarm_page/alarm_list_page.dart';
 
 final FlutterLocalNotificationsPlugin localNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -38,9 +39,9 @@ void notificationHandler(NotificationResponse response) async {
   // This is called when a notification or its action is tapped.
   if (response.actionId != null) {
     if (response.actionId == 'snooze') {
-      await AlarmReceiver.snoozeAlarm(alarmItemId);
+      await AlarmHandler.snoozeAlarm(alarmItemId);
     } else if (response.actionId == 'dismiss') {
-      await AlarmReceiver.stopAlarm(alarmItemId);
+      await AlarmHandler.stopAlarm(alarmItemId);
     }
 
     return;
@@ -63,7 +64,24 @@ void alarmHandler() {
   // FlutterForegroundTask.setTaskHandler(AlarmTaskHandler());
 }
 
-class AlarmReceiver {
+class AlarmClient {
+  static Future<bool> insertAlarm(AlarmItemView alarm) async {
+    await SqfliteService().insertAlarm(alarm);
+    return await AlarmHandler.scheduleAlarm(alarm);
+  }
+
+  static Future<bool> updateAlarm(AlarmItemView alarm) async {
+    await SqfliteService().updateAlarm(alarm);
+    return await AlarmHandler.rescheduleAlarm(alarm);
+  }
+
+  static Future<void> deleteAlarm(int id) async {
+    await SqfliteService().deleteAlarm(id);
+    await AlarmHandler.stopAlarm(id);
+  }
+}
+
+class AlarmHandler {
   static void init(BuildContext context) async {
     final AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -218,10 +236,12 @@ class AlarmReceiver {
     }
 
     // cancel the upcoming alarm notification and the alarm
-    await localNotificationsPlugin.cancel(alarmItem.id * 1234); // upcoming
-    await localNotificationsPlugin.cancel(alarmItem.id);
     FlutterForegroundTask.stopService();
     SharedPreferencesService.removeActiveAlarmId();
+    await localNotificationsPlugin.cancel(alarmItem.id * 1234); // upcoming
+    await localNotificationsPlugin.cancel(alarmItem.id);
+    await AndroidAlarmManager.cancel(alarmItem.id * 1234);
+    await AndroidAlarmManager.cancel(alarmItem.id);
   }
 
   static Future<void> snoozeAlarm(int id) async {
@@ -243,47 +263,59 @@ class AlarmReceiver {
     rescheduleAlarmOnSnooze(alarmItem.id);
   }
 
-  static Future<void> scheduleAlarm(AlarmItemView alarm) async {
-    int alarmId = alarm.id;
-    int preAlarmId = (alarm.id * 1234);
-    DateTime alarmTime = alarm.time; //.now().add(Duration(seconds: 5));
-    DateTime preAlarmTime = alarm.time.subtract(Duration(hours: 2));
+  static Future<bool> scheduleAlarm(AlarmItemView alarm) async {
+    debugPrint('Setting alarm with id: ${alarm.id}');
 
-    if (alarm.scheduledDays.isEmpty) {
-      // only once
-      await AndroidAlarmManager.oneShotAt(
-          preAlarmTime, preAlarmId, AlarmReceiver.showUpcomingNotification,
-          exact: true,
-          wakeup: true,
-          rescheduleOnReboot: true,
-          alarmClock: true,
-          allowWhileIdle: true);
-
-      await AndroidAlarmManager.oneShotAt(
-          alarm.time, alarm.id, AlarmReceiver.showNotification,
-          exact: true,
-          wakeup: true,
-          rescheduleOnReboot: true,
-          alarmClock: true,
-          allowWhileIdle: true);
-    } else {
-      // recurring
-      await AndroidAlarmManager.periodic(const Duration(hours: 24), preAlarmId,
-          AlarmReceiver.showUpcomingNotification,
-          exact: true,
-          wakeup: true,
-          rescheduleOnReboot: true,
-          startAt: preAlarmTime,
-          allowWhileIdle: true);
-
-      await AndroidAlarmManager.periodic(
-          const Duration(hours: 24), alarmId, AlarmReceiver.showNotification,
-          exact: true,
-          wakeup: true,
-          rescheduleOnReboot: true,
-          startAt: alarmTime,
-          allowWhileIdle: true);
+    if (!alarm.enabled) {
+      debugPrint('Alarm is not enabled. Cancelling...');
+      await stopAlarm(alarm.id);
+      return false;
     }
+
+    bool isSuccess = true;
+    List<AlarmInfo> alarms = [
+      AlarmInfo(
+          id: alarm.id * 1234,
+          time: alarm.time.subtract(Duration(hours: 2)),
+          callback: AlarmHandler.showUpcomingNotification),
+      AlarmInfo(
+          id: alarm.id,
+          time: alarm.time,
+          callback: AlarmHandler.showNotification)
+    ];
+
+    for (var info in alarms) {
+      debugPrint(
+          'Scheduling ${info.callback == AlarmHandler.showNotification ? 'main' : 'pre'} alarm...');
+
+      isSuccess = alarm.scheduledDays.isEmpty
+          ? await AndroidAlarmManager.oneShotAt(
+              info.time, info.id, info.callback,
+              exact: true,
+              wakeup: true,
+              rescheduleOnReboot: true,
+              alarmClock: true,
+              allowWhileIdle: true)
+          : await AndroidAlarmManager.periodic(
+              Duration(hours: 24), info.id, info.callback,
+              exact: true,
+              wakeup: true,
+              rescheduleOnReboot: true,
+              startAt: info.time,
+              allowWhileIdle: true);
+
+      debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
+
+      if (!isSuccess) break;
+    }
+
+    return isSuccess;
+  }
+
+  static Future<bool> rescheduleAlarm(AlarmItemView alarm) async {
+    debugPrint('Reset alarm with id: ${alarm.id}');
+    await stopAlarm(alarm.id);
+    return await scheduleAlarm(alarm);
   }
 
   static Future<void> rescheduleAlarmOnSnooze(int id) async {
@@ -331,7 +363,7 @@ class AlarmReceiver {
 
     // Update alarm notification (time)
     await AndroidAlarmManager.oneShotAt(
-        alarmTime, alarmItem.id, AlarmReceiver.showNotification,
+        alarmTime, alarmItem.id, AlarmHandler.showNotification,
         exact: true,
         wakeup: true,
         rescheduleOnReboot: true,
@@ -425,9 +457,9 @@ class AlarmForegroundTaskHandler extends TaskHandler {
 
     // This is called when a notification or its action is tapped.
     if (actionId == 'snooze') {
-      await AlarmReceiver.snoozeAlarm(_alarmItemId);
+      await AlarmHandler.snoozeAlarm(_alarmItemId);
     } else if (actionId == 'dismiss') {
-      await AlarmReceiver.stopAlarm(_alarmItemId);
+      await AlarmHandler.stopAlarm(_alarmItemId);
     }
   }
 
@@ -440,4 +472,12 @@ class AlarmForegroundTaskHandler extends TaskHandler {
     print('onNotificationPressed >> $_alarmItemId');
     FlutterForegroundTask.launchApp('${AlarmScreen.routeName}/$_alarmItemId');
   }
+}
+
+class AlarmInfo {
+  int id;
+  DateTime time;
+  Function callback;
+
+  AlarmInfo({required this.id, required this.time, required this.callback});
 }
