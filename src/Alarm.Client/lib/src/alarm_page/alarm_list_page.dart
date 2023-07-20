@@ -39,18 +39,18 @@ class _AlarmListPageState extends State<AlarmListPage> {
   void initState() {
     super.initState();
 
-    // // Foreground task
-    // WidgetsBinding.instance.addPostFrameCallback((_) async {
-    //   await _requestPermissionForAndroid(); // Needed for Redmi 8
+    // Foreground task
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _requestPermissionForAndroid(); // Needed for Redmi 8
 
-    //   // _initForegroundTask();
+      // _initForegroundTask();
 
-    //   // // You can get the previous ReceivePort without restarting the service.
-    //   // if (await FlutterForegroundTask.isRunningService) {
-    //   //   final newReceivePort = FlutterForegroundTask.receivePort;
-    //   //   _registerReceivePort(newReceivePort);
-    //   // }
-    // });
+      // // You can get the previous ReceivePort without restarting the service.
+      // if (await FlutterForegroundTask.isRunningService) {
+      //   final newReceivePort = FlutterForegroundTask.receivePort;
+      //   _registerReceivePort(newReceivePort);
+      // }
+    });
 
     SqfliteService().getAlarms().then((alarms) {
       setState(() {
@@ -236,16 +236,16 @@ class _AlarmListPageState extends State<AlarmListPage> {
             style: const TextStyle(fontSize: 16, color: Colors.white)),
         Switch(
           value: item.enabled,
-          onChanged: (newValue) {
+          onChanged: (newValue) async {
             setState(() => item.enabled = newValue);
 
-            // Cancel the previous timer
-            _daySelectionTimer?.cancel();
-            // Start a new one
-            _daySelectionTimer = Timer(Duration(seconds: 3), () async {
-              // When the timer fires, update the database
-              await AlarmService.updateAlarm(item); // update in the database
-            });
+            // // Cancel the previous timer
+            // _daySelectionTimer?.cancel();
+            // // Start a new one
+            // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
+            //   // When the timer fires, update the database
+            await AlarmService.updateAlarm(item); // update in the database
+            // });
           },
           activeColor: Colors.white,
         ),
@@ -263,16 +263,16 @@ class _AlarmListPageState extends State<AlarmListPage> {
           Row(children: [..._buildDaySelectors(item, dayNames)]),
           _buildLabelInput(item),
           _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) {
-            setState(() {
+            setState(() async {
               item.vibrationChecked = value!;
 
-              // Cancel the previous timer
-              _daySelectionTimer?.cancel();
-              // Start a new one
-              _daySelectionTimer = Timer(Duration(seconds: 3), () async {
-                // When the timer fires, update the database
-                await AlarmService.updateAlarm(item); // update in the database
-              });
+              // // Cancel the previous timer
+              // _daySelectionTimer?.cancel();
+              // // Start a new one
+              // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
+              //   // When the timer fires, update the database
+              await AlarmService.updateAlarm(item); // update in the database
+              // });
             });
           }),
           Row(
@@ -333,16 +333,16 @@ class _AlarmListPageState extends State<AlarmListPage> {
             borderSide: BorderSide(color: Colors.white),
           ),
         ),
-        onChanged: (value) {
+        onChanged: (value) async {
           item.label = value;
 
-          // Cancel the previous timer
-          _daySelectionTimer?.cancel();
-          // Start a new one
-          _daySelectionTimer = Timer(Duration(seconds: 3), () async {
-            // When the timer fires, update the database
-            await AlarmService.updateAlarm(item); // update in the database
-          });
+          // // Cancel the previous timer
+          // _daySelectionTimer?.cancel();
+          // // Start a new one
+          // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
+          //   // When the timer fires, update the database
+          await AlarmService.updateAlarm(item); // update in the database
+          // });
         },
       ),
     );
@@ -353,20 +353,20 @@ class _AlarmListPageState extends State<AlarmListPage> {
       bool isScheduled = item.scheduledDays.contains(index + 1);
       return GestureDetector(
         onTap: () {
-          setState(() {
+          setState(() async {
             if (isScheduled) {
               item.scheduledDays.remove(index + 1);
             } else {
               item.scheduledDays.add(index + 1);
             }
 
-            // Cancel the previous timer
-            _daySelectionTimer?.cancel();
-            // Start a new one
-            _daySelectionTimer = Timer(Duration(seconds: 3), () async {
-              // When the timer fires, update the database
-              await AlarmService.updateAlarm(item); // update in the database
-            });
+            // // Cancel the previous timer
+            // _daySelectionTimer?.cancel();
+            // // Start a new one
+            // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
+            //   // When the timer fires, update the database
+            await AlarmService.updateAlarm(item); // update in the database
+            // });
           });
         },
         child: Container(
