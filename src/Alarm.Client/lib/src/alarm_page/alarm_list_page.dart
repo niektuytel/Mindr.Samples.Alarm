@@ -189,7 +189,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             );
             if (selectedTime != null) {
               setState(() {
-                item.time = DateTime(
+                var time = DateTime(
                   DateTime.now().year,
                   DateTime.now().month,
                   DateTime.now().day,
@@ -197,11 +197,13 @@ class _AlarmListPageState extends State<AlarmListPage> {
                   selectedTime.minute,
                 );
 
-                if (item.time.isBefore(DateTime.now())) {
-                  item.time = item.time.add(Duration(days: 1));
+                if (time.isBefore(DateTime.now())) {
+                  time = item.time.add(Duration(days: 1));
                 }
+
+                item.time = time;
               });
-              await AlarmService.updateAlarm(item); // update in the database
+              await AlarmService.updateAlarm(item, true);
             }
           },
           child: Text(
@@ -244,7 +246,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             // // Start a new one
             // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
             //   // When the timer fires, update the database
-            await AlarmService.updateAlarm(item); // update in the database
+            await AlarmService.updateAlarm(item, true);
             // });
           },
           activeColor: Colors.white,
@@ -262,7 +264,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
         children: [
           Row(children: [..._buildDaySelectors(item, dayNames)]),
           _buildLabelInput(item),
-          _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) {
+          _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) async {
             setState(() async {
               item.vibrationChecked = value!;
 
@@ -271,9 +273,9 @@ class _AlarmListPageState extends State<AlarmListPage> {
               // // Start a new one
               // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
               //   // When the timer fires, update the database
-              await AlarmService.updateAlarm(item); // update in the database
               // });
             });
+            await AlarmService.updateAlarm(item, false);
           }),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -341,7 +343,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
           // // Start a new one
           // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
           //   // When the timer fires, update the database
-          await AlarmService.updateAlarm(item); // update in the database
+          await AlarmService.updateAlarm(item, false);
           // });
         },
       ),
@@ -352,7 +354,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     return List<Widget>.generate(7, (index) {
       bool isScheduled = item.scheduledDays.contains(index + 1);
       return GestureDetector(
-        onTap: () {
+        onTap: () async {
           setState(() async {
             if (isScheduled) {
               item.scheduledDays.remove(index + 1);
@@ -365,9 +367,10 @@ class _AlarmListPageState extends State<AlarmListPage> {
             // // Start a new one
             // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
             //   // When the timer fires, update the database
-            await AlarmService.updateAlarm(item); // update in the database
             // });
           });
+
+          await AlarmService.updateAlarm(item, false);
         },
         child: Container(
           width: 30,

@@ -63,13 +63,18 @@ class AlarmService {
     return await AlarmHandler.scheduleAlarm(alarm);
   }
 
-  static Future<bool> updateAlarm(AlarmItemView alarm) async {
+  static Future<bool> updateAlarm(
+      AlarmItemView alarm, bool updateAlarmManager) async {
     print('Updating alarm: ${alarm.toMap().toString()}');
     await SqfliteService().updateAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
 
-    return await AlarmHandler.scheduleAlarm(alarm);
+    if (updateAlarmManager) {
+      return await AlarmHandler.scheduleAlarm(alarm);
+    }
+
+    return true;
   }
 
   static Future<void> stopAlarm(int id) async {
@@ -102,7 +107,7 @@ class AlarmService {
 
     item.time = DateTime.now().add(Duration(days: daysToAdd));
 
-    var updateStatus = await updateAlarm(item);
+    var updateStatus = await updateAlarm(item, true);
     if (!updateStatus) {
       print('Failed to update the alarm');
     }
