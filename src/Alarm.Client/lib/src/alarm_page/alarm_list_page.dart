@@ -108,10 +108,6 @@ class _AlarmListPageState extends State<AlarmListPage> {
               selectedTime.minute,
             );
 
-            if (time.isBefore(DateTime.now())) {
-              time = time.add(Duration(days: 1));
-            }
-
             AlarmItemView newAlarm = AlarmItemView(
               0, // Change to appropriate ID based on your requirements
               time,
@@ -196,10 +192,6 @@ class _AlarmListPageState extends State<AlarmListPage> {
                   selectedTime.hour,
                   selectedTime.minute,
                 );
-
-                if (time.isBefore(DateTime.now())) {
-                  time = item.time.add(Duration(days: 1));
-                }
 
                 item.time = time;
               });
@@ -355,22 +347,15 @@ class _AlarmListPageState extends State<AlarmListPage> {
       bool isScheduled = item.scheduledDays.contains(index + 1);
       return GestureDetector(
         onTap: () async {
-          setState(() async {
-            if (isScheduled) {
-              item.scheduledDays.remove(index + 1);
-            } else {
-              item.scheduledDays.add(index + 1);
-            }
-
-            // // Cancel the previous timer
-            // _daySelectionTimer?.cancel();
-            // // Start a new one
-            // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
-            //   // When the timer fires, update the database
-            // });
-          });
-
-          await AlarmService.updateAlarm(item, false);
+          if (isScheduled) {
+            item.scheduledDays.remove(index + 1);
+          } else {
+            item.scheduledDays.add(index + 1);
+          }
+          // Now update the database
+          await AlarmService.updateAlarm(item, true);
+          // After completing database update, update the state.
+          setState(() {});
         },
         child: Container(
           width: 30,

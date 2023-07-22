@@ -38,17 +38,6 @@ class AlarmHandler {
       return;
     }
 
-    // Check if current day is in the scheduledDays list
-    if (alarmItem.scheduledDays.isNotEmpty) {
-      int currentDay =
-          DateTime.now().weekday; // Get the current day of the week
-
-      if (!alarmItem.scheduledDays.contains(currentDay)) {
-        print('Today is not a scheduled day for this alarm');
-        return; // Return early if today is not a scheduled day
-      }
-    }
-
     print('Upcoming Alarm triggered!');
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       (id).toString(),
@@ -93,17 +82,6 @@ class AlarmHandler {
 
     if (alarmItem == null || alarmItem.enabled == false) {
       return false;
-    }
-
-    // Check if current day is in the scheduledDays list
-    if (alarmItem.scheduledDays.isNotEmpty) {
-      int currentDay =
-          DateTime.now().weekday; // Get the current day of the week
-
-      if (!alarmItem.scheduledDays.contains(currentDay)) {
-        print('Today is not a scheduled day for this alarm');
-        return false; // Return early if today is not a scheduled day
-      }
     }
 
     // cancel the upcoming alarm notification
@@ -227,6 +205,26 @@ class AlarmHandler {
       debugPrint(
           'Scheduling ${info.callback == AlarmHandler.showNotification ? 'main' : 'pre'} alarm...');
 
+      // Check if current day is in the scheduledDays list
+      if (alarm.scheduledDays.isNotEmpty) {
+        int currentDay = DateTime.now().weekday;
+        if (!alarm.scheduledDays.contains(currentDay)) {
+          print('Today is not a scheduled day for this alarm, set next day');
+
+          var dayOfWeek = DateTime.now().weekday;
+          var nextDay = alarm.scheduledDays.firstWhere(
+              (element) => element > dayOfWeek,
+              orElse: () => alarm.scheduledDays.first);
+
+          // calculate the number of days to add
+          int daysToAdd = nextDay > dayOfWeek
+              ? nextDay - dayOfWeek
+              : 7 - dayOfWeek + nextDay;
+
+          info.time = info.time.add(Duration(days: daysToAdd));
+        }
+      }
+
       isSuccess = alarm.scheduledDays.isEmpty
           ? await AndroidAlarmManager.oneShotAt(
               info.time, info.id, info.callback,
@@ -308,6 +306,43 @@ class AlarmHandler {
   @pragma('vm:entry-point')
   static String formatDateTime(DateTime dateTime) {
     return DateFormat('EEE h:mm a').format(dateTime);
+  }
+
+  @pragma('vm:entry-point')
+  static Future<AlarmItemView> setNextItemTime(AlarmItemView item) async {
+    var nextTime = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+      item.time.hour,
+      item.time.minute,
+    );
+
+    if (!item.enabled) {
+      return item;
+    } else if (item.scheduledDays.isEmpty) {
+      if (nextTime.isBefore(DateTime.now())) {
+        nextTime = nextTime.add(Duration(days: 1));
+      }
+
+      item.time = nextTime;
+      print('Next time: ${item.time}');
+      return item;
+    }
+
+    var dayOfWeek = nextTime.weekday;
+    var nextDay = item.scheduledDays.firstWhere(
+        (element) => element > dayOfWeek,
+        orElse: () => item.scheduledDays.first);
+
+    // calculate the number of days to add
+    int daysToAdd =
+        (nextDay > dayOfWeek ? nextDay - dayOfWeek : 7 - dayOfWeek + nextDay) -
+            1;
+
+    item.time = nextTime.add(Duration(days: daysToAdd));
+    print('Next time: ${item.time}');
+    return item;
   }
 }
 

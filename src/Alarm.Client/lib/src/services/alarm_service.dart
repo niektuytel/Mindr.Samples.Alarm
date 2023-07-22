@@ -56,6 +56,8 @@ void alarmHandler() {
 class AlarmService {
   static Future<bool> insertAlarm(AlarmItemView alarm) async {
     print('Insert alarm: ${alarm.toMap().toString()}');
+
+    alarm = await AlarmHandler.setNextItemTime(alarm);
     await SqfliteService().insertAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
@@ -66,6 +68,8 @@ class AlarmService {
   static Future<bool> updateAlarm(
       AlarmItemView alarm, bool updateAlarmManager) async {
     print('Updating alarm: ${alarm.toMap().toString()}');
+
+    alarm = await AlarmHandler.setNextItemTime(alarm);
     await SqfliteService().updateAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
@@ -96,18 +100,8 @@ class AlarmService {
       return;
     }
 
-    var dayOfWeek = DateTime.now().weekday;
-    var nextDay = item.scheduledDays.firstWhere(
-        (element) => element > dayOfWeek,
-        orElse: () => item.scheduledDays.first);
-
-    // calculate the number of days to add
-    int daysToAdd =
-        nextDay > dayOfWeek ? nextDay - dayOfWeek : 7 - dayOfWeek + nextDay;
-
-    item.time = DateTime.now().add(Duration(days: daysToAdd));
-
     var updateStatus = await updateAlarm(item, true);
+
     if (!updateStatus) {
       print('Failed to update the alarm');
     }
