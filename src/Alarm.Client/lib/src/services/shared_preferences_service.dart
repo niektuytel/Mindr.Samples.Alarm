@@ -24,4 +24,6 @@ class SharedPreferencesService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.remove("alarm_item_id");
   }
+
+  static setUpcomingAlarmItemId(int id) {}
 }

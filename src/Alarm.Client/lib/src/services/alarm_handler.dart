@@ -33,6 +33,62 @@ class AlarmHandler {
   }
 
   @pragma('vm:entry-point')
+  static Future<void> showUpcomingNotificationV2(int id) async {
+    int itemId = (id / 1234).truncate();
+
+    SqfliteService dbHelper = SqfliteService();
+    AlarmItemView? alarmItem = await dbHelper.getAlarm(itemId);
+
+    if (alarmItem == null || alarmItem.enabled == false) {
+      return;
+    }
+
+    print('Upcoming Alarm triggered!');
+
+    // initialize the FlutterForegroundTask
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        id: id,
+        channelId: 'upcoming_alarm',
+        channelName: 'Upcoming Alarm',
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
+        buttons: [
+          const NotificationButton(
+            id: 'dismiss',
+            text: 'Dismiss',
+            textColor: Color.fromARGB(255, 0, 0, 0),
+          ),
+        ],
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: true,
+        playSound: false,
+      ),
+      foregroundTaskOptions: const ForegroundTaskOptions(
+        interval: (15 * 60 * 1000), // 15 min
+        isOnceEvent: false,
+        autoRunOnBoot: false,
+        allowWakeLock: false,
+        allowWifiLock: false,
+      ),
+    );
+
+    String body = alarmItem.label.isEmpty
+        ? formatDateTime(alarmItem.time)
+        : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
+
+    // You can save data using the saveData function.
+    await FlutterForegroundTask.saveData(key: 'upcomingAlarmItemId', value: id);
+    await SharedPreferencesService.setUpcomingAlarmItemId(id);
+    await FlutterForegroundTask.startService(
+      notificationTitle: 'Upcoming alarm',
+      notificationText: body,
+      callback: notificationHandler,
+    );
+  }
+
+  @pragma('vm:entry-point')
   static Future<void> showUpcomingNotification(int id) async {
     int itemId = (id / 1234).truncate();
 

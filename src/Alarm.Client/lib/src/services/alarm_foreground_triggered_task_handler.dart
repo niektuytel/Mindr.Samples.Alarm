@@ -10,7 +10,7 @@ import '../alarm_page/alarm_screen.dart';
 import 'alarm_service.dart';
 import 'alarm_handler.dart';
 
-class AlarmForegroundTaskHandler extends TaskHandler {
+class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
   SendPort? _sendPort;
   int _eventCount = 0;
   int _alarmItemId = 0;
