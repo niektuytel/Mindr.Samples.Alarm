@@ -248,7 +248,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
   }
 
   Widget _buildExpansionTileChildren(AlarmItemView item) {
-    const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
+    const dayNames = ["M", "T", "W", "T", "F", "S", "S"];
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(

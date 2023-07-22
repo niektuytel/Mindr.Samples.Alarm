@@ -337,8 +337,7 @@ class AlarmHandler {
 
     // calculate the number of days to add
     int daysToAdd =
-        (nextDay > dayOfWeek ? nextDay - dayOfWeek : 7 - dayOfWeek + nextDay) -
-            1;
+        (nextDay > dayOfWeek ? nextDay - dayOfWeek : 7 - dayOfWeek + nextDay);
 
     item.time = nextTime.add(Duration(days: daysToAdd));
     print('Next time: ${item.time}');
