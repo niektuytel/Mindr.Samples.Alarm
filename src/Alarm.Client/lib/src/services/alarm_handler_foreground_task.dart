@@ -18,13 +18,12 @@ class AlarmForegroundTaskHandler extends TaskHandler {
   // Called when the task is started.
   @override
   Future<void> onStart(DateTime timestamp, SendPort? sendPort) async {
-    FlutterForegroundTask.wakeUpScreen();
-    FlutterForegroundTask.setOnLockScreenVisibility(true);
-    //
-
     _sendPort = sendPort;
     _alarmItemId =
         await FlutterForegroundTask.getData<int>(key: 'alarmItemId') as int;
+
+    FlutterForegroundTask.wakeUpScreen();
+    FlutterForegroundTask.setOnLockScreenVisibility(true);
 
     // Sound
     final session = await AudioSession.instance;
@@ -60,6 +59,9 @@ class AlarmForegroundTaskHandler extends TaskHandler {
       // Stop playback after 20 minutes
       await audioPlayer.stop();
     });
+
+    // // launch app
+    // FlutterForegroundTask.launchApp('${AlarmScreen.routeName}/$_alarmItemId');
   }
 
   // Called every [interval] milliseconds in [ForegroundTaskOptions].

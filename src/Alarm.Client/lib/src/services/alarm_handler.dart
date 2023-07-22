@@ -205,41 +205,13 @@ class AlarmHandler {
       debugPrint(
           'Scheduling ${info.callback == AlarmHandler.showNotification ? 'main' : 'pre'} alarm...');
 
-      // Check if current day is in the scheduledDays list
-      if (alarm.scheduledDays.isNotEmpty) {
-        int currentDay = DateTime.now().weekday;
-        if (!alarm.scheduledDays.contains(currentDay)) {
-          print('Today is not a scheduled day for this alarm, set next day');
-
-          var dayOfWeek = DateTime.now().weekday;
-          var nextDay = alarm.scheduledDays.firstWhere(
-              (element) => element > dayOfWeek,
-              orElse: () => alarm.scheduledDays.first);
-
-          // calculate the number of days to add
-          int daysToAdd = nextDay > dayOfWeek
-              ? nextDay - dayOfWeek
-              : 7 - dayOfWeek + nextDay;
-
-          info.time = info.time.add(Duration(days: daysToAdd));
-        }
-      }
-
-      isSuccess = alarm.scheduledDays.isEmpty
-          ? await AndroidAlarmManager.oneShotAt(
-              info.time, info.id, info.callback,
-              exact: true,
-              wakeup: true,
-              rescheduleOnReboot: true,
-              alarmClock: true,
-              allowWhileIdle: true)
-          : await AndroidAlarmManager.periodic(
-              Duration(hours: 24), info.id, info.callback,
-              exact: true,
-              wakeup: true,
-              rescheduleOnReboot: true,
-              startAt: info.time,
-              allowWhileIdle: true);
+      isSuccess = await AndroidAlarmManager.oneShotAt(
+          info.time, info.id, info.callback,
+          exact: true,
+          wakeup: true,
+          rescheduleOnReboot: true,
+          alarmClock: true,
+          allowWhileIdle: true);
 
       debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
 
@@ -330,7 +302,8 @@ class AlarmHandler {
       return item;
     }
 
-    var dayOfWeek = nextTime.weekday;
+    item.scheduledDays.sort();
+    var dayOfWeek = nextTime.weekday + 1;
     var nextDay = item.scheduledDays.firstWhere(
         (element) => element > dayOfWeek,
         orElse: () => item.scheduledDays.first);
@@ -339,8 +312,18 @@ class AlarmHandler {
     int daysToAdd =
         (nextDay > dayOfWeek ? nextDay - dayOfWeek : 7 - dayOfWeek + nextDay);
 
+    // if the next day is today, add 7 days if the time is before now
+    if (item.scheduledDays.contains(dayOfWeek) &&
+        nextTime.isAfter(DateTime.now())) {
+      item.time = nextTime;
+      print(
+          'Next time: ${item.time} [nextDay: $nextDay, dayOfWeek: $dayOfWeek daysToAdd: $daysToAdd]');
+      return item;
+    }
+
     item.time = nextTime.add(Duration(days: daysToAdd));
-    print('Next time: ${item.time}');
+    print(
+        'Next time: ${item.time} [nextDay: $nextDay, dayOfWeek: $dayOfWeek daysToAdd: $daysToAdd]');
     return item;
   }
 }

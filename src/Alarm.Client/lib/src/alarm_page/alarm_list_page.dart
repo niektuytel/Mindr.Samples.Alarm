@@ -248,7 +248,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
   }
 
   Widget _buildExpansionTileChildren(AlarmItemView item) {
-    const dayNames = ["M", "T", "W", "T", "F", "S", "S"];
+    const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
@@ -257,16 +257,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
           Row(children: [..._buildDaySelectors(item, dayNames)]),
           _buildLabelInput(item),
           _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) async {
-            setState(() async {
-              item.vibrationChecked = value!;
-
-              // // Cancel the previous timer
-              // _daySelectionTimer?.cancel();
-              // // Start a new one
-              // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
-              //   // When the timer fires, update the database
-              // });
-            });
+            setState(() => item.vibrationChecked = value!);
             await AlarmService.updateAlarm(item, false);
           }),
           Row(
@@ -329,14 +320,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
         ),
         onChanged: (value) async {
           item.label = value;
-
-          // // Cancel the previous timer
-          // _daySelectionTimer?.cancel();
-          // // Start a new one
-          // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
-          //   // When the timer fires, update the database
           await AlarmService.updateAlarm(item, false);
-          // });
         },
       ),
     );
@@ -406,10 +390,14 @@ class _AlarmListPageState extends State<AlarmListPage> {
   }
 
   String getFormattedScheduledDays(List<int> scheduledDays) {
-    scheduledDays.sort();
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     List<String> selectedDays = [];
 
+    if (scheduledDays.length == 7) {
+      return 'Daily';
+    }
+
+    scheduledDays.sort();
     for (int dayIndex in scheduledDays) {
       if (dayIndex >= 1 && dayIndex <= 7) {
         selectedDays.add(dayNames[dayIndex - 1]);
