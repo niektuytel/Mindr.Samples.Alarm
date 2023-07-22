@@ -69,7 +69,6 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
   @override
   Widget build(BuildContext context) {
-    AlarmHandler.init(context);
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
 
     return Scaffold(

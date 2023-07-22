@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:mindr.alarm/src/services/alarm_handler.dart';
+import 'package:mindr.alarm/src/services/alarm_service.dart';
 import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
 import 'package:mindr.alarm/src/alarm_page/alarm_screen.dart';
 import 'package:mindr.alarm/src/alarm_page/alarm_list_page.dart';
@@ -25,6 +28,8 @@ Future<void> _configureLocalTimeZone() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AndroidAlarmManager.initialize();
+  AlarmHandler.initialize();
+
   await _configureLocalTimeZone();
 
   var alarmItemId = await SharedPreferencesService.getActiveAlarmItemId();

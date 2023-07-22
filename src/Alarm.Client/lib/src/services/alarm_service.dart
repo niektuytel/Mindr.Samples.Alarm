@@ -12,9 +12,6 @@ import 'alarm_handler.dart';
 import 'alarm_handler_foreground_task.dart';
 import 'sqflite_service.dart';
 
-final FlutterLocalNotificationsPlugin localNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
-
 // This must be a top-level function, outside of any class.
 @pragma('vm:entry-point')
 Future<void> notificationHandler(NotificationResponse response) async {

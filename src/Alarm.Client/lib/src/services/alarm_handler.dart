@@ -7,13 +7,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_local_notifications/src/platform_specifics/android/enums.dart'
+    as visualizer;
 
 import '../models/alarm_item_view.dart';
 import 'alarm_service.dart';
 
+final FlutterLocalNotificationsPlugin localNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
 class AlarmHandler {
   @pragma('vm:entry-point')
-  static void init(BuildContext context) async {
+  static void initialize() async {
     final AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
