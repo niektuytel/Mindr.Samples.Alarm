@@ -8,53 +8,16 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../../main.dart';
 import '../alarm_page/alarm_screen.dart';
+import '../utils/datatimeUtils.dart';
 import 'alarm_handler.dart';
-import 'alarm_background_triggered_task_handler.dart';
+import 'alarm_foreground_triggered_task_handler.dart';
 import 'sqflite_service.dart';
-
-// This must be a top-level function, outside of any class.
-@pragma('vm:entry-point')
-Future<void> notificationHandler(NotificationResponse response) async {
-  print(
-      'Notification handler id:${response.id} payload:${response.payload!} action:${response.actionId}');
-
-  int alarmItemId = jsonDecode(response.payload!)['id'];
-  bool? openAlarmOnClick = jsonDecode(response.payload!)['open_alarm_onclick'];
-
-  // This is called when a notification or its action is tapped.
-  if (response.actionId != null) {
-    if (response.actionId == 'snooze') {
-      await AlarmHandler.snoozeAlarm(alarmItemId);
-    } else if (response.actionId == 'dismiss') {
-      await AlarmService.stopAlarm(alarmItemId);
-    }
-
-    return;
-  }
-
-  await SharedPreferencesService.setActiveAlarmItemId(alarmItemId);
-  if (openAlarmOnClick == true) {
-    // Open the alarm screen, when app is in background.
-    if (navigatorKey.currentState != null) {
-      await navigatorKey.currentState!
-          .pushNamed('${AlarmScreen.routeName}/$alarmItemId');
-    }
-  }
-}
-
-// The callback function should always be a top-level function.
-@pragma('vm:entry-point')
-void alarmHandler() {
-  FlutterForegroundTask.setTaskHandler(AlarmBackgroundTriggeredTaskHandler());
-  // // The setTaskHandler function must be called to handle the task in the background.
-  // FlutterForegroundTask.setTaskHandler(AlarmTaskHandler());
-}
 
 class AlarmService {
   static Future<bool> insertAlarm(AlarmItemView alarm) async {
     print('Insert alarm: ${alarm.toMap().toString()}');
 
-    alarm = await AlarmHandler.setNextItemTime(alarm);
+    alarm = await DateTimeUtils.setNextItemTime(alarm);
     await SqfliteService().insertAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
@@ -66,7 +29,7 @@ class AlarmService {
       AlarmItemView alarm, bool updateAlarmManager) async {
     print('Updating alarm: ${alarm.toMap().toString()}');
 
-    alarm = await AlarmHandler.setNextItemTime(alarm);
+    alarm = await DateTimeUtils.setNextItemTime(alarm);
     await SqfliteService().updateAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)

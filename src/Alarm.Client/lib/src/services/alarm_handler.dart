@@ -10,15 +10,57 @@ import 'package:intl/intl.dart';
 import 'package:flutter_local_notifications/src/platform_specifics/android/enums.dart'
     as visualizer;
 
+import '../../main.dart';
+import '../alarm_page/alarm_screen.dart';
 import '../models/alarm_item_view.dart';
+import '../utils/datatimeUtils.dart';
+import 'alarm_foreground_triggered_task_handler.dart';
 import 'alarm_service.dart';
 
-final FlutterLocalNotificationsPlugin localNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+// This must be a top-level function, outside of any class.
+@pragma('vm:entry-point')
+Future<void> notificationHandler(NotificationResponse response) async {
+  print(
+      'Notification handler id:${response.id} payload:${response.payload!} action:${response.actionId}');
+
+  int alarmItemId = jsonDecode(response.payload!)['id'];
+  bool? openAlarmOnClick = jsonDecode(response.payload!)['open_alarm_onclick'];
+
+  // This is called when a notification or its action is tapped.
+  if (response.actionId != null) {
+    if (response.actionId == 'snooze') {
+      await AlarmHandler.snoozeAlarm(alarmItemId);
+    } else if (response.actionId == 'dismiss') {
+      await AlarmService.stopAlarm(alarmItemId);
+    }
+
+    return;
+  }
+
+  await SharedPreferencesService.setActiveAlarmItemId(alarmItemId);
+  if (openAlarmOnClick == true) {
+    // Open the alarm screen, when app is in background.
+    if (navigatorKey.currentState != null) {
+      await navigatorKey.currentState!
+          .pushNamed('${AlarmScreen.routeName}/$alarmItemId');
+    }
+  }
+}
 
 class AlarmHandler {
   @pragma('vm:entry-point')
-  static void initialize() async {
+  static Future<void> showUpcomingNotification(int id) async {
+    int itemId = (id / 1234).truncate();
+
+    SqfliteService dbHelper = SqfliteService();
+    AlarmItemView? alarmItem = await dbHelper.getAlarm(itemId);
+
+    if (alarmItem == null || alarmItem.enabled == false) {
+      return;
+    }
+
+    final FlutterLocalNotificationsPlugin localNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
     final AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -30,74 +72,6 @@ class AlarmHandler {
       onDidReceiveNotificationResponse: notificationHandler,
       onDidReceiveBackgroundNotificationResponse: notificationHandler,
     );
-  }
-
-  @pragma('vm:entry-point')
-  static Future<void> showUpcomingNotificationV2(int id) async {
-    int itemId = (id / 1234).truncate();
-
-    SqfliteService dbHelper = SqfliteService();
-    AlarmItemView? alarmItem = await dbHelper.getAlarm(itemId);
-
-    if (alarmItem == null || alarmItem.enabled == false) {
-      return;
-    }
-
-    print('Upcoming Alarm triggered!');
-
-    // initialize the FlutterForegroundTask
-    FlutterForegroundTask.init(
-      androidNotificationOptions: AndroidNotificationOptions(
-        id: id,
-        channelId: 'upcoming_alarm',
-        channelName: 'Upcoming Alarm',
-        channelImportance: NotificationChannelImportance.LOW,
-        priority: NotificationPriority.LOW,
-        buttons: [
-          const NotificationButton(
-            id: 'dismiss',
-            text: 'Dismiss',
-            textColor: Color.fromARGB(255, 0, 0, 0),
-          ),
-        ],
-      ),
-      iosNotificationOptions: const IOSNotificationOptions(
-        showNotification: true,
-        playSound: false,
-      ),
-      foregroundTaskOptions: const ForegroundTaskOptions(
-        interval: (15 * 60 * 1000), // 15 min
-        isOnceEvent: false,
-        autoRunOnBoot: false,
-        allowWakeLock: false,
-        allowWifiLock: false,
-      ),
-    );
-
-    String body = alarmItem.label.isEmpty
-        ? formatDateTime(alarmItem.time)
-        : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
-
-    // You can save data using the saveData function.
-    await FlutterForegroundTask.saveData(key: 'upcomingAlarmItemId', value: id);
-    await SharedPreferencesService.setUpcomingAlarmItemId(id);
-    await FlutterForegroundTask.startService(
-      notificationTitle: 'Upcoming alarm',
-      notificationText: body,
-      callback: notificationHandler,
-    );
-  }
-
-  @pragma('vm:entry-point')
-  static Future<void> showUpcomingNotification(int id) async {
-    int itemId = (id / 1234).truncate();
-
-    SqfliteService dbHelper = SqfliteService();
-    AlarmItemView? alarmItem = await dbHelper.getAlarm(itemId);
-
-    if (alarmItem == null || alarmItem.enabled == false) {
-      return;
-    }
 
     print('Upcoming Alarm triggered!');
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
@@ -121,8 +95,8 @@ class AlarmHandler {
     );
 
     String body = alarmItem.label.isEmpty
-        ? formatDateTime(alarmItem.time)
-        : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
+        ? DateTimeUtils.formatDateTime(alarmItem.time)
+        : '${DateTimeUtils.formatDateTime(alarmItem.time)} - ${alarmItem.label}';
 
     // create the payload
     Map<String, dynamic> payloadData = {
@@ -145,9 +119,9 @@ class AlarmHandler {
       return false;
     }
 
-    // cancel the upcoming alarm notification
-    await localNotificationsPlugin.cancel(alarmItem.id);
-    await localNotificationsPlugin.cancel(alarmItem.id * 1234);
+    // // cancel the upcoming alarm notification
+    // await localNotificationsPlugin.cancel(alarmItem.id);
+    // await localNotificationsPlugin.cancel(alarmItem.id * 1234);
 
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
@@ -183,8 +157,8 @@ class AlarmHandler {
     );
 
     String body = alarmItem.label.isEmpty
-        ? formatDateTime(alarmItem.time)
-        : '${formatDateTime(alarmItem.time)} - ${alarmItem.label}';
+        ? DateTimeUtils.formatDateTime(alarmItem.time)
+        : '${DateTimeUtils.formatDateTime(alarmItem.time)} - ${alarmItem.label}';
 
     // You can save data using the saveData function.
     await FlutterForegroundTask.saveData(key: 'alarmItemId', value: id);
@@ -192,7 +166,7 @@ class AlarmHandler {
     return FlutterForegroundTask.startService(
       notificationTitle: 'Alarm',
       notificationText: body,
-      callback: alarmHandler,
+      callback: handleAlarmTriggeredTask,
     );
   }
 
@@ -210,8 +184,8 @@ class AlarmHandler {
 
     // cancel the upcoming alarm notification and the alarm
     await SharedPreferencesService.removeActiveAlarmId();
-    await localNotificationsPlugin.cancel(alarmItem.id * 1234); // upcoming
-    await localNotificationsPlugin.cancel(alarmItem.id);
+    // await localNotificationsPlugin.cancel(alarmItem.id * 1234); // upcoming
+    // await localNotificationsPlugin.cancel(alarmItem.id);
     await AndroidAlarmManager.cancel(alarmItem.id * 1234);
     await AndroidAlarmManager.cancel(alarmItem.id);
     await FlutterForegroundTask.stopService();
@@ -229,8 +203,8 @@ class AlarmHandler {
     print('Snoozing alarm for 10 minutes...');
 
     // cancel the upcoming alarm notification and the alarm
-    await localNotificationsPlugin.cancel(alarmItem.id * 1234);
-    await localNotificationsPlugin.cancel(alarmItem.id);
+    // await localNotificationsPlugin.cancel(alarmItem.id * 1234);
+    // await localNotificationsPlugin.cancel(alarmItem.id);
     await FlutterForegroundTask.stopService();
 
     // show snoozed alarm
@@ -259,8 +233,8 @@ class AlarmHandler {
           callback: AlarmHandler.showNotification)
     ];
 
-    // restart the upcoming alarm notification (can been show what have not to be hidden)
-    await localNotificationsPlugin.cancel(alarm.id * 1234);
+    // // restart the upcoming alarm notification (can been show what have not to be hidden)
+    // await localNotificationsPlugin.cancel(alarm.id * 1234);
 
     for (var info in alarms) {
       debugPrint(
@@ -291,6 +265,20 @@ class AlarmHandler {
       return;
     }
 
+    final FlutterLocalNotificationsPlugin localNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
+    final AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    final InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+
+    await localNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: notificationHandler,
+      onDidReceiveBackgroundNotificationResponse: notificationHandler,
+    );
+
     print('Snoozed Alarm triggered!');
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       (id * 1234).toString(),
@@ -313,8 +301,8 @@ class AlarmHandler {
 
     DateTime alarmTime = DateTime.now().add(Duration(minutes: 10));
     String body = alarmItem.label.isEmpty
-        ? formatDateTime(alarmTime)
-        : '${formatDateTime(alarmTime)} - ${alarmItem.label}';
+        ? DateTimeUtils.formatDateTime(alarmTime)
+        : '${DateTimeUtils.formatDateTime(alarmTime)} - ${alarmItem.label}';
 
     // create the payload
     Map<String, dynamic> payloadData = {
@@ -334,58 +322,6 @@ class AlarmHandler {
         rescheduleOnReboot: true,
         alarmClock: true,
         allowWhileIdle: true);
-  }
-
-  @pragma('vm:entry-point')
-  static String formatDateTime(DateTime dateTime) {
-    return DateFormat('EEE h:mm a').format(dateTime);
-  }
-
-  @pragma('vm:entry-point')
-  static Future<AlarmItemView> setNextItemTime(AlarmItemView item) async {
-    var nextTime = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-      item.time.hour,
-      item.time.minute,
-    );
-
-    if (!item.enabled) {
-      return item;
-    } else if (item.scheduledDays.isEmpty) {
-      if (nextTime.isBefore(DateTime.now())) {
-        nextTime = nextTime.add(Duration(days: 1));
-      }
-
-      item.time = nextTime;
-      print('Next time: ${item.time}');
-      return item;
-    }
-
-    item.scheduledDays.sort();
-    var dayOfWeek = nextTime.weekday + 1;
-    var nextDay = item.scheduledDays.firstWhere(
-        (element) => element > dayOfWeek,
-        orElse: () => item.scheduledDays.first);
-
-    // calculate the number of days to add
-    int daysToAdd =
-        (nextDay > dayOfWeek ? nextDay - dayOfWeek : 7 - dayOfWeek + nextDay);
-
-    // if the next day is today, add 7 days if the time is before now
-    if (item.scheduledDays.contains(dayOfWeek) &&
-        nextTime.isAfter(DateTime.now())) {
-      item.time = nextTime;
-      print(
-          'Next time: ${item.time} [nextDay: $nextDay, dayOfWeek: $dayOfWeek daysToAdd: $daysToAdd]');
-      return item;
-    }
-
-    item.time = nextTime.add(Duration(days: daysToAdd));
-    print(
-        'Next time: ${item.time} [nextDay: $nextDay, dayOfWeek: $dayOfWeek daysToAdd: $daysToAdd]');
-    return item;
   }
 }
 

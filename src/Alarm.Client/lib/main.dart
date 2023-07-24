@@ -54,7 +54,6 @@ Future<void> _firebaseMessagingForegroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AndroidAlarmManager.initialize();
-  AlarmHandler.initialize();
   await _configureLocalTimeZone();
 
   // Used for MINDR database sync:
@@ -109,11 +108,6 @@ void main() async {
 //    The upcomming alarm notification is not shown in the notification bar when the app is removed from the the background. (before 10:03AM)
 // Debug:
 //     Tested on Redmi 8 see this issue, consent on battery optimization, the issue is resolved. (DONE! :))
-
-// TODO: When set alarm in range of 2 hours from the time it's been set the upcoming alarm notification is shown.
-//    But when closing app and removing it from the background, the upcoming alarm notification is removed from notifications.
-// Debug:
-//      Need more consent other than, [consent on battery optimization]
 
 // TODO: When the alarm is fired and the app is STILL in the background, and we click on the alarm notification.
 //    The alarm screen is not shown to put the alarm off.
