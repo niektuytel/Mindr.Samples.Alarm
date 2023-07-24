@@ -9,7 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../../main.dart';
 import '../alarm_page/alarm_screen.dart';
 import 'alarm_handler.dart';
-import 'alarm_foreground_triggered_task_handler.dart';
+import 'alarm_background_triggered_task_handler.dart';
 import 'sqflite_service.dart';
 
 // This must be a top-level function, outside of any class.
@@ -45,7 +45,7 @@ Future<void> notificationHandler(NotificationResponse response) async {
 // The callback function should always be a top-level function.
 @pragma('vm:entry-point')
 void alarmHandler() {
-  FlutterForegroundTask.setTaskHandler(AlarmForegroundTriggeredTaskHandler());
+  FlutterForegroundTask.setTaskHandler(AlarmBackgroundTriggeredTaskHandler());
   // // The setTaskHandler function must be called to handle the task in the background.
   // FlutterForegroundTask.setTaskHandler(AlarmTaskHandler());
 }
