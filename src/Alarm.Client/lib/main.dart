@@ -107,7 +107,7 @@ void main() async {
 // [FIXED] TODO: When now the time is 10:00AM and you set an alarm on 12:03AM, the alarm is not been triggered.
 //    The upcomming alarm notification is not shown in the notification bar when the app is removed from the the background. (before 10:03AM)
 // Debug:
-//     Tested on Redmi 8 see this issue, consent on battery optimization, the issue is resolved. (DONE! :))
+//     STILL hhave issues
 
 // TODO: When the alarm is fired and the app is STILL in the background, and we click on the alarm notification.
 //    The alarm screen is not shown to put the alarm off.

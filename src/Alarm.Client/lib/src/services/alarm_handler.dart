@@ -15,37 +15,8 @@ import '../alarm_page/alarm_screen.dart';
 import '../models/alarm_item_view.dart';
 import '../utils/datatimeUtils.dart';
 import 'alarm_foreground_triggered_task_handler.dart';
+import 'alarm_local_notification_handler.dart';
 import 'alarm_service.dart';
-
-// This must be a top-level function, outside of any class.
-@pragma('vm:entry-point')
-Future<void> notificationHandler(NotificationResponse response) async {
-  print(
-      'Notification handler id:${response.id} payload:${response.payload!} action:${response.actionId}');
-
-  int alarmItemId = jsonDecode(response.payload!)['id'];
-  bool? openAlarmOnClick = jsonDecode(response.payload!)['open_alarm_onclick'];
-
-  // This is called when a notification or its action is tapped.
-  if (response.actionId != null) {
-    if (response.actionId == 'snooze') {
-      await AlarmHandler.snoozeAlarm(alarmItemId);
-    } else if (response.actionId == 'dismiss') {
-      await AlarmService.stopAlarm(alarmItemId);
-    }
-
-    return;
-  }
-
-  await SharedPreferencesService.setActiveAlarmItemId(alarmItemId);
-  if (openAlarmOnClick == true) {
-    // Open the alarm screen, when app is in background.
-    if (navigatorKey.currentState != null) {
-      await navigatorKey.currentState!
-          .pushNamed('${AlarmScreen.routeName}/$alarmItemId');
-    }
-  }
-}
 
 class AlarmHandler {
   @pragma('vm:entry-point')
@@ -58,20 +29,6 @@ class AlarmHandler {
     if (alarmItem == null || alarmItem.enabled == false) {
       return;
     }
-
-    final FlutterLocalNotificationsPlugin localNotificationsPlugin =
-        FlutterLocalNotificationsPlugin();
-    final AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-
-    await localNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: notificationHandler,
-      onDidReceiveBackgroundNotificationResponse: notificationHandler,
-    );
 
     print('Upcoming Alarm triggered!');
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
@@ -104,6 +61,8 @@ class AlarmHandler {
       'open_alarm_onclick': true,
     };
 
+    final FlutterLocalNotificationsPlugin localNotificationsPlugin =
+        await LocalNotificationHandler.GetInitializedNotification();
     await localNotificationsPlugin.show(
         id, 'Upcoming alarm', body, platformChannelSpecifics,
         payload: jsonEncode(payloadData));
@@ -119,9 +78,8 @@ class AlarmHandler {
       return false;
     }
 
-    // // cancel the upcoming alarm notification
-    // await localNotificationsPlugin.cancel(alarmItem.id);
-    // await localNotificationsPlugin.cancel(alarmItem.id * 1234);
+    // cancel the upcoming alarm notification
+    await LocalNotificationHandler.Cancel(alarmItem.id);
 
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
@@ -184,14 +142,14 @@ class AlarmHandler {
 
     // cancel the upcoming alarm notification and the alarm
     await SharedPreferencesService.removeActiveAlarmId();
-    // await localNotificationsPlugin.cancel(alarmItem.id * 1234); // upcoming
-    // await localNotificationsPlugin.cancel(alarmItem.id);
+    await LocalNotificationHandler.Cancel(alarmItem.id);
     await AndroidAlarmManager.cancel(alarmItem.id * 1234);
     await AndroidAlarmManager.cancel(alarmItem.id);
     await FlutterForegroundTask.stopService();
     return alarmItem;
   }
 
+  @pragma('vm:entry-point')
   static Future<void> snoozeAlarm(int id) async {
     SqfliteService dbHelper = SqfliteService();
     AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
@@ -202,84 +160,11 @@ class AlarmHandler {
 
     print('Snoozing alarm for 10 minutes...');
 
-    // cancel the upcoming alarm notification and the alarm
-    // await localNotificationsPlugin.cancel(alarmItem.id * 1234);
-    // await localNotificationsPlugin.cancel(alarmItem.id);
+    // cancel the alarm and upcoming alarm notification
+    await LocalNotificationHandler.Cancel(alarmItem.id);
     await FlutterForegroundTask.stopService();
 
     // show snoozed alarm
-    await rescheduleAlarmOnSnooze(alarmItem.id);
-  }
-
-  @pragma('vm:entry-point')
-  static Future<bool> scheduleAlarm(AlarmItemView alarm) async {
-    debugPrint('Setting alarm with id: ${alarm.id}');
-
-    if (!alarm.enabled) {
-      debugPrint('Alarm is not enabled. Cancelling...');
-      await AlarmService.stopAlarm(alarm.id);
-      return false;
-    }
-
-    bool isSuccess = true;
-    List<AlarmInfo> alarms = [
-      AlarmInfo(
-          id: alarm.id * 1234,
-          time: alarm.time.subtract(Duration(hours: 2)),
-          callback: AlarmHandler.showUpcomingNotification),
-      AlarmInfo(
-          id: alarm.id,
-          time: alarm.time,
-          callback: AlarmHandler.showNotification)
-    ];
-
-    // // restart the upcoming alarm notification (can been show what have not to be hidden)
-    // await localNotificationsPlugin.cancel(alarm.id * 1234);
-
-    for (var info in alarms) {
-      debugPrint(
-          'Scheduling ${info.callback == AlarmHandler.showNotification ? 'main' : 'pre'} alarm...');
-
-      isSuccess = await AndroidAlarmManager.oneShotAt(
-          info.time, info.id, info.callback,
-          exact: true,
-          wakeup: true,
-          rescheduleOnReboot: true,
-          alarmClock: true,
-          allowWhileIdle: true);
-
-      debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
-
-      if (!isSuccess) break;
-    }
-
-    return isSuccess;
-  }
-
-  @pragma('vm:entry-point')
-  static Future<void> rescheduleAlarmOnSnooze(int id) async {
-    SqfliteService dbHelper = SqfliteService();
-    AlarmItemView? alarmItem = await dbHelper.getAlarm(id);
-
-    if (alarmItem == null) {
-      return;
-    }
-
-    final FlutterLocalNotificationsPlugin localNotificationsPlugin =
-        FlutterLocalNotificationsPlugin();
-    final AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-
-    await localNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: notificationHandler,
-      onDidReceiveBackgroundNotificationResponse: notificationHandler,
-    );
-
-    print('Snoozed Alarm triggered!');
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
       (id * 1234).toString(),
       'Snoozed Alarm',
@@ -310,6 +195,8 @@ class AlarmHandler {
       'open_alarm_onclick': true,
     };
 
+    final FlutterLocalNotificationsPlugin localNotificationsPlugin =
+        await LocalNotificationHandler.GetInitializedNotification();
     await localNotificationsPlugin.show(
         id, 'Snoozed alarm', body, platformChannelSpecifics,
         payload: jsonEncode(payloadData));
@@ -322,6 +209,51 @@ class AlarmHandler {
         rescheduleOnReboot: true,
         alarmClock: true,
         allowWhileIdle: true);
+  }
+
+  @pragma('vm:entry-point')
+  static Future<bool> scheduleAlarm(AlarmItemView alarm) async {
+    debugPrint('Setting alarm with id: ${alarm.id}');
+
+    if (!alarm.enabled) {
+      debugPrint('Alarm is not enabled. Cancelling...');
+      await AlarmService.stopAlarm(alarm.id);
+      return false;
+    }
+
+    // restart the upcoming alarm notification (can been show what have not to be hidden)
+    await LocalNotificationHandler.Cancel(alarm.id);
+
+    bool isSuccess = true;
+    List<AlarmInfo> alarms = [
+      AlarmInfo(
+          id: alarm.id * 1234,
+          time: alarm.time.subtract(Duration(hours: 2)),
+          callback: AlarmHandler.showUpcomingNotification),
+      AlarmInfo(
+          id: alarm.id,
+          time: alarm.time,
+          callback: AlarmHandler.showNotification)
+    ];
+
+    for (var info in alarms) {
+      debugPrint(
+          'Scheduling ${info.callback == AlarmHandler.showNotification ? 'main' : 'pre'} alarm...');
+
+      isSuccess = await AndroidAlarmManager.oneShotAt(
+          info.time, info.id, info.callback,
+          exact: true,
+          wakeup: true,
+          rescheduleOnReboot: true,
+          alarmClock: true,
+          allowWhileIdle: true);
+
+      debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
+
+      if (!isSuccess) break;
+    }
+
+    return isSuccess;
   }
 }
 
