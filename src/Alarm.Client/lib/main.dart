@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mindr.alarm/src/services/alarm_handler.dart';
 import 'package:mindr.alarm/src/services/alarm_service.dart';
@@ -12,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -25,12 +28,44 @@ Future<void> _configureLocalTimeZone() async {
   tz.setLocalLocation(tz.getLocation(timeZoneName!));
 }
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // // If you're going to use other Firebase services in the background, such as Firestore,
+  // // make sure you call `initializeApp` before using other Firebase services.
+  // await Firebase.initializeApp();
+
+  // TODO: update, create or delete alarm here based on the message data.
+  // This trigger comes from the database trigger on the server side.
+  // from background state, application is (not running)/killed
+
+  print(
+      "Handling a background message: ${message.messageId} data: ${message.toMap()}");
+}
+
+Future<void> _firebaseMessagingForegroundHandler(RemoteMessage message) async {
+  // TODO: update, create or delete alarm here based on the message data.
+  // This trigger comes from the database trigger on the server side.
+  // from foreground state, application is still running
+
+  print(
+      "Handling a foreground message: ${message.messageId} data: ${message.toMap()}");
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AndroidAlarmManager.initialize();
   AlarmHandler.initialize();
-
   await _configureLocalTimeZone();
+
+  // Used for MINDR database sync:
+  // https://console.firebase.google.com/u/0/project/mindr-samples-alarm/notification/compose
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  final fcmToken = await FirebaseMessaging.instance.getToken();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onMessage.listen(_firebaseMessagingForegroundHandler);
+  print('fcmToken: $fcmToken');
 
   var alarmItemId = await SharedPreferencesService.getActiveAlarmItemId();
   print("main >> ${alarmItemId}");
@@ -68,7 +103,7 @@ void main() async {
 }
 
 // (NEW Features)
-// - 
+// -
 
 // [FIXED] TODO: When now the time is 10:00AM and you set an alarm on 12:03AM, the alarm is not been triggered.
 //    The upcomming alarm notification is not shown in the notification bar when the app is removed from the the background. (before 10:03AM)
@@ -76,13 +111,13 @@ void main() async {
 //     Tested on Redmi 8 see this issue, consent on battery optimization, the issue is resolved. (DONE! :))
 
 // TODO: When set alarm in range of 2 hours from the time it's been set the upcoming alarm notification is shown.
-//    But when closing app and removing it from the background, the upcoming alarm notification is removed from notifications. 
+//    But when closing app and removing it from the background, the upcoming alarm notification is removed from notifications.
 // Debug:
 //      Need more consent other than, [consent on battery optimization]
 
-// TODO: When the alarm is fired and the app is STILL in the background, and we click on the alarm notification. 
+// TODO: When the alarm is fired and the app is STILL in the background, and we click on the alarm notification.
 //    The alarm screen is not shown to put the alarm off.
-// Debug: 
+// Debug:
 //      Notification ssed to run in foreground service as it has not been removed from the background.
 
 // TODO: Show alarm screen when the alarm is fired, to stop the alarm.

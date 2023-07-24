@@ -34,6 +34,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   alarm: ^1.1.5
+  firebase_messaging: ^14.6.5
+  firebase_core: ^2.15.0
 
 dev_dependencies:
   flutter_test:

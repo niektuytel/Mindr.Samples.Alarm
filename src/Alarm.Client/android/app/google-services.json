@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "978138716290",
+    "project_id": "mindr-samples-alarm",
+    "storage_bucket": "mindr-samples-alarm.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978138716290:android:a6ce969d28687f1d157c9b",
+        "android_client_info": {
+          "package_name": "com.mindr.alarm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "978138716290-52fg32j16o10saoq9t2o5n4ime75drdn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8bMZnfhZiw32TUEDUY3evvUTcjoVlc5A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "978138716290-52fg32j16o10saoq9t2o5n4ime75drdn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "978138716290-414jgjuphf6bsgf60gnikqoo17336u2a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mindr.alarm.RunnerTests"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

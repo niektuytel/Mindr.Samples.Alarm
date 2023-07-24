@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -9,6 +10,7 @@ import '../services/alarm_service.dart';
 import '../services/alarm_handler.dart';
 import '../services/sqflite_service.dart';
 import '../models/alarm_item_view.dart';
+import 'alarm_screen.dart';
 
 class AlarmListPage extends StatefulWidget {
   static const routeName = '/';
@@ -35,6 +37,31 @@ class _AlarmListPageState extends State<AlarmListPage> {
   Timer? _daySelectionTimer;
   Timer? _vibrationChangeTimer;
 
+// In this example, suppose that all messages contain a data field with the key 'type'.
+  Future<void> setupInteractedMessage() async {
+    // Get any messages which caused the application to open from
+    // a terminated state.
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
+
+    // If the message also contains a data property with a "type" of "chat",
+    // navigate to a chat screen
+    if (initialMessage != null) {
+      _handleMessage(initialMessage);
+    }
+
+    // Also handle any interaction when the app is in the background via a
+    // Stream listener
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    if (message.data['type'] == 'chat') {
+      Navigator.pushNamed(
+          context, '/${AlarmScreen.routeName}/${message.senderId}');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +78,10 @@ class _AlarmListPageState extends State<AlarmListPage> {
       //   _registerReceivePort(newReceivePort);
       // }
     });
+
+    // // Run code required to handle interacted messages in an async function
+    // // as initState() must not be async
+    // setupInteractedMessage();
 
     SqfliteService().getAlarms().then((alarms) {
       setState(() {
