@@ -13,8 +13,8 @@ import 'package:vibration/vibration.dart';
 import '../alarm_page/alarm_screen.dart';
 import '../models/alarm_item_view.dart';
 import '../utils/datatimeUtils.dart';
-import 'alarm_service.dart';
-import 'alarm_handler.dart';
+import 'alarmManagerApi.dart';
+import 'alarmNotificationApi.dart';
 
 // The callback function should always be a top-level function.
 @pragma('vm:entry-point')
@@ -22,6 +22,67 @@ void handleAlarmTriggeredTask() {
   FlutterForegroundTask.setTaskHandler(AlarmForegroundTriggeredTaskHandler());
   // // The setTaskHandler function must be called to handle the task in the background.
   // FlutterForegroundTask.setTaskHandler(AlarmTaskHandler());
+}
+
+class AlarmTriggerApi {
+  @pragma('vm:entry-point')
+  static Future<bool> execute(int id, Map<String, dynamic> params) async {
+    await AlarmNotificationApi.init();
+    var alarmItem = AlarmItemView.fromMap(params);
+
+    if (alarmItem.enabled == false) {
+      return false;
+    }
+
+    // cancel the upcoming alarm notification
+    AlarmNotificationApi.cancelUpcomingNotification(alarmItem.id);
+
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        id: id,
+        channelId: 'triggered_alarm',
+        channelName: 'Alarm',
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
+        buttons: [
+          const NotificationButton(
+            id: 'snooze',
+            text: 'Snooze',
+            textColor: Color.fromARGB(255, 0, 0, 0),
+          ),
+          const NotificationButton(
+            id: 'dismiss',
+            text: 'Stop',
+            textColor: Color.fromARGB(255, 0, 0, 0),
+          ),
+        ],
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: true,
+        playSound: false,
+      ),
+      foregroundTaskOptions: const ForegroundTaskOptions(
+        interval: 5000,
+        isOnceEvent: false,
+        autoRunOnBoot: true,
+        allowWakeLock: true,
+        allowWifiLock: true,
+      ),
+    );
+
+    String body = alarmItem.label.isEmpty
+        ? DateTimeUtils.formatDateTime(alarmItem.time)
+        : '${DateTimeUtils.formatDateTime(alarmItem.time)} - ${alarmItem.label}';
+
+    // You can save data using the saveData function.
+    await FlutterForegroundTask.saveData(key: 'alarmItemId', value: id);
+    await SharedPreferencesService.setActiveAlarmItemId(id);
+    return FlutterForegroundTask.startService(
+      notificationTitle: 'Alarm',
+      notificationText: body,
+      callback: handleAlarmTriggeredTask,
+    );
+  }
 }
 
 class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
@@ -107,10 +168,10 @@ class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
 
     // This is called when a notification or its action is tapped.
     if (actionId == 'snooze') {
-      await AlarmHandler.snoozeAlarm(_alarmItemId);
+      await AlarmManagerApi.snoozeAlarm(_alarmItemId);
     } else if (actionId == 'dismiss') {
       await AndroidAlarmManager.initialize();
-      await AlarmService.stopAlarm(_alarmItemId);
+      await AlarmManagerApi.stopAlarm(_alarmItemId);
     }
   }
 

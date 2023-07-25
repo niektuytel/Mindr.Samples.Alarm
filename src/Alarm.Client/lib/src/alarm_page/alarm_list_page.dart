@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
 import '../mindr_page/mindr_view.dart';
-import '../services/alarm_service.dart';
-import '../services/alarm_handler.dart';
+import '../services/alarmNotificationApi.dart';
 import '../services/sqflite_service.dart';
 import '../models/alarm_item_view.dart';
 import 'alarm_screen.dart';
@@ -39,20 +40,13 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
   @override
   void initState() {
+    // loadAllNotifications;
     super.initState();
 
-    // Foreground task
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _requestPermissionForAndroid(); // Needed for Redmi 8
-
-      // _initForegroundTask();
-
-      // // You can get the previous ReceivePort without restarting the service.
-      // if (await FlutterForegroundTask.isRunningService) {
-      //   final newReceivePort = FlutterForegroundTask.receivePort;
-      //   _registerReceivePort(newReceivePort);
-      // }
-    });
+    // // Foreground task
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   await _requestPermissionForAndroid(); // Needed for Redmi 8
+    // });
 
     SqfliteService().getAlarms().then((alarms) {
       setState(() {
@@ -61,6 +55,24 @@ class _AlarmListPageState extends State<AlarmListPage> {
     });
     _scrollController = ScrollController()..addListener(_scrollListener);
   }
+
+  // loadAllNotifications() {
+  //   NotificationApi.showWeeklyScheduledNotification(
+  //       title: '🏆 New Deals Available 🏆',
+  //       body: '✨ Don\'t miss your opportunity to win BIG 💰💰',
+  //       scheduledDate: DateTime.now().add(const Duration(seconds: 12)));
+  //   NotificationApi.init();
+  //   listenNotifications();
+  // }
+
+  // // Listen to Notifications
+  // void listenNotifications() =>
+  //     NotificationApi.onNotifications.stream.listen(onClickedNotification);
+
+  // void onClickedNotification(NotificationResponse? payload) =>
+  //     Navigator.of(context)
+  //         .push(MaterialPageRoute(builder: (context) => AlarmScreen(1)));
+  // // end
 
   void _scrollListener() {
     final color = _scrollController.position.pixels > 10
@@ -122,7 +134,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
               widget.items.add(newAlarm);
             });
 
-            await AlarmService.insertAlarm(newAlarm);
+            await AlarmManagerApi.insertAlarm(newAlarm);
           }
         },
       ),
@@ -196,7 +208,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
                 item.time = time;
               });
-              await AlarmService.updateAlarm(item, true);
+              await AlarmManagerApi.updateAlarm(item, true);
             }
           },
           child: Text(
@@ -239,7 +251,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             // // Start a new one
             // _daySelectionTimer = Timer(Duration(seconds: 3), () async {
             //   // When the timer fires, update the database
-            await AlarmService.updateAlarm(item, true);
+            await AlarmManagerApi.updateAlarm(item, true);
             // });
           },
           activeColor: Colors.white,
@@ -259,7 +271,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
           _buildLabelInput(item),
           _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) async {
             setState(() => item.vibrationChecked = value!);
-            await AlarmService.updateAlarm(item, false);
+            await AlarmManagerApi.updateAlarm(item, false);
           }),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -267,7 +279,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
               Expanded(
                 child: TextButton.icon(
                   onPressed: () async {
-                    await AlarmService.deleteAlarm(item.id);
+                    await AlarmManagerApi.deleteAlarm(item.id);
                     setState(() {
                       widget.items.remove(item);
                     });
@@ -321,7 +333,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
         ),
         onChanged: (value) async {
           item.label = value;
-          await AlarmService.updateAlarm(item, false);
+          await AlarmManagerApi.updateAlarm(item, false);
         },
       ),
     );
@@ -338,7 +350,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             item.scheduledDays.add(index + 1);
           }
           // Now update the database
-          await AlarmService.updateAlarm(item, true);
+          await AlarmManagerApi.updateAlarm(item, true);
           // After completing database update, update the state.
           setState(() {});
         },

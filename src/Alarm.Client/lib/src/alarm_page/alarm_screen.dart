@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:slidable_button/slidable_button.dart';
 
-import '../services/alarm_service.dart';
-import '../services/alarm_handler.dart';
+import '../services/alarmManagerApi.dart';
 
 class AlarmScreen extends StatefulWidget {
   // below 0 is wrong value
@@ -84,7 +83,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                     onChanged: (position) {
                       setState(() {
                         if (position == SlidableButtonPosition.end) {
-                          AlarmService.stopAlarm(alarmItemId);
+                          AlarmManagerApi.stopAlarm(alarmItemId);
                           Navigator.of(context).pop();
                         }
                       });
@@ -93,7 +92,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                   SizedBox(height: 20), // add a bit of spacing
                   ElevatedButton(
                     onPressed: () {
-                      AlarmHandler.snoozeAlarm(alarmItemId);
+                      AlarmManagerApi.snoozeAlarm(alarmItemId);
                       Navigator.of(context).pop();
                     },
                     child: Text('Snooze'),

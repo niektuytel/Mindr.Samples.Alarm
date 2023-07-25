@@ -2,9 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:mindr.alarm/src/services/alarm_handler.dart';
-import 'package:mindr.alarm/src/services/alarm_service.dart';
+import 'package:mindr.alarm/src/services/alarmNotificationApi.dart';
 import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
 import 'package:mindr.alarm/src/alarm_page/alarm_screen.dart';
 import 'package:mindr.alarm/src/alarm_page/alarm_list_page.dart';
@@ -30,6 +28,9 @@ Future<void> _configureLocalTimeZone() async {
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await AlarmNotificationApi.init();
+  await AndroidAlarmManager.initialize();
+
   // // If you're going to use other Firebase services in the background, such as Firestore,
   // // make sure you call `initializeApp` before using other Firebase services.
   // await Firebase.initializeApp();
@@ -53,6 +54,7 @@ Future<void> _firebaseMessagingForegroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AlarmNotificationApi.init();
   await AndroidAlarmManager.initialize();
   await _configureLocalTimeZone();
 
@@ -104,14 +106,10 @@ void main() async {
 // (NEW Features)
 // -
 
-// [FIXED] TODO: When now the time is 10:00AM and you set an alarm on 12:03AM, the alarm is not been triggered.
-//    The upcomming alarm notification is not shown in the notification bar when the app is removed from the the background. (before 10:03AM)
-// Debug:
-//     STILL hhave issues
-
 // TODO: When the alarm is fired and the app is STILL in the background, and we click on the alarm notification.
 //    The alarm screen is not shown to put the alarm off.
 // Debug:
 //      Notification ssed to run in foreground service as it has not been removed from the background.
 
 // TODO: Show alarm screen when the alarm is fired, to stop the alarm.
+
