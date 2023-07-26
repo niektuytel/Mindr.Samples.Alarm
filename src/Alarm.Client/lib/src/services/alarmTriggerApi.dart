@@ -11,7 +11,7 @@ import 'package:mindr.alarm/src/services/sqflite_service.dart';
 import 'package:vibration/vibration.dart';
 
 import '../alarm_page/alarm_screen.dart';
-import '../models/alarm_item_view.dart';
+import '../models/alarmEntity.dart';
 import '../utils/datatimeUtils.dart';
 import 'alarmManagerApi.dart';
 import 'alarmNotificationApi.dart';
@@ -27,8 +27,8 @@ void handleAlarmTriggeredTask() {
 class AlarmTriggerApi {
   @pragma('vm:entry-point')
   static Future<bool> execute(int id, Map<String, dynamic> params) async {
-    await AlarmNotificationApi.init();
-    var alarmItem = AlarmItemView.fromMap(params);
+    // await AlarmNotificationApi.init();
+    var alarmItem = AlarmEntity.fromMap(params);
 
     if (alarmItem.enabled == false) {
       return false;
@@ -170,7 +170,6 @@ class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
     if (actionId == 'snooze') {
       await AlarmManagerApi.snoozeAlarm(_alarmItemId);
     } else if (actionId == 'dismiss') {
-      await AndroidAlarmManager.initialize();
       await AlarmManagerApi.stopAlarm(_alarmItemId);
     }
   }

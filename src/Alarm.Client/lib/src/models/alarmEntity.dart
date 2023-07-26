@@ -1,7 +1,7 @@
 import 'dart:ffi';
 
-class AlarmItemView {
-  AlarmItemView(
+class AlarmEntity {
+  AlarmEntity(
     this.id,
     this.time,
     this.scheduledDays,
@@ -39,7 +39,7 @@ class AlarmItemView {
   }
 
   // Create a AlarmItem from a Map.
-  AlarmItemView.fromMap(Map<String, dynamic> map)
+  AlarmEntity.fromMap(Map<String, dynamic> map)
       : id = map['id'],
         time = DateTime.parse(map['time']),
         label = map['label'],

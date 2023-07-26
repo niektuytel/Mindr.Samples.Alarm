@@ -8,22 +8,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
 import '../mindr_page/mindr_view.dart';
+import '../models/alarmEntity.dart';
 import '../services/alarmNotificationApi.dart';
 import '../services/sqflite_service.dart';
-import '../models/alarm_item_view.dart';
 import 'alarm_screen.dart';
 
 class AlarmListPage extends StatefulWidget {
   static const routeName = '/';
 
-  AlarmListPage({Key? key, List<AlarmItemView>? items})
+  AlarmListPage({Key? key, List<AlarmEntity>? items})
       : _items = items,
         super(key: key);
 
-  List<AlarmItemView>? _items = [];
+  List<AlarmEntity>? _items = [];
 
-  List<AlarmItemView> get items => _items ?? [];
-  set items(List<AlarmItemView> value) {
+  List<AlarmEntity> get items => _items ?? [];
+  set items(List<AlarmEntity> value) {
     _items = value;
   }
 
@@ -121,7 +121,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
               selectedTime.minute,
             );
 
-            AlarmItemView newAlarm = AlarmItemView(
+            AlarmEntity newAlarm = AlarmEntity(
               0, // Change to appropriate ID based on your requirements
               time,
               [], // Default days
@@ -235,7 +235,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     );
   }
 
-  Widget _buildSubtitle(AlarmItemView item) {
+  Widget _buildSubtitle(AlarmEntity item) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -260,7 +260,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     );
   }
 
-  Widget _buildExpansionTileChildren(AlarmItemView item) {
+  Widget _buildExpansionTileChildren(AlarmEntity item) {
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -315,7 +315,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     );
   }
 
-  Widget _buildLabelInput(AlarmItemView item) {
+  Widget _buildLabelInput(AlarmEntity item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
@@ -339,7 +339,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     );
   }
 
-  List<Widget> _buildDaySelectors(AlarmItemView item, List<String> dayNames) {
+  List<Widget> _buildDaySelectors(AlarmEntity item, List<String> dayNames) {
     return List<Widget>.generate(7, (index) {
       bool isScheduled = item.scheduledDays.contains(index + 1);
       return GestureDetector(

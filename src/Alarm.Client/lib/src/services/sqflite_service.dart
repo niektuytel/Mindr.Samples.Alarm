@@ -1,10 +1,11 @@
-import 'package:mindr.alarm/src/models/alarm_item_view.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:path/path.dart' as path;
 import 'dart:io' as io;
 import 'dart:async';
+
+import '../models/alarmEntity.dart';
 
 class SqfliteService {
   static Database? _db;
@@ -36,31 +37,31 @@ class SqfliteService {
         "syncWithMindr INTEGER)");
   }
 
-  Future<List<AlarmItemView>> getAlarms() async {
+  Future<List<AlarmEntity>> getAlarms() async {
     var dbClient = await db;
     List<Map<String, dynamic>> maps = await dbClient.query('alarm');
-    List<AlarmItemView> alarms = [];
+    List<AlarmEntity> alarms = [];
     if (maps.length > 0) {
       for (int i = 0; i < maps.length; i++) {
-        alarms.add(AlarmItemView.fromMap(maps[i]));
+        alarms.add(AlarmEntity.fromMap(maps[i]));
       }
     }
     return alarms;
   }
 
-  Future<AlarmItemView?> getAlarm(int id) async {
+  Future<AlarmEntity?> getAlarm(int id) async {
     var dbClient = await db;
     List<Map<String, dynamic>> result =
         await dbClient.query("alarm", where: "id = ?", whereArgs: [id]);
 
     if (result.length > 0) {
-      return AlarmItemView.fromMap(result.first);
+      return AlarmEntity.fromMap(result.first);
     }
 
     return null;
   }
 
-  Future<int> insertAlarm(AlarmItemView alarm) async {
+  Future<int> insertAlarm(AlarmEntity alarm) async {
     var dbClient = await db;
     int? id = Sqflite.firstIntValue(
         await dbClient.rawQuery('SELECT MAX(id)+1 as id FROM alarm'));
@@ -69,7 +70,7 @@ class SqfliteService {
     return res;
   }
 
-  Future<int> updateAlarm(AlarmItemView alarm) async {
+  Future<int> updateAlarm(AlarmEntity alarm) async {
     var dbClient = await db;
     int res = await dbClient
         .update("alarm", alarm.toMap(), where: "id = ?", whereArgs: [alarm.id]);

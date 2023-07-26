@@ -1,13 +1,13 @@
 import 'package:intl/intl.dart';
 
-import '../models/alarm_item_view.dart';
+import '../models/alarmEntity.dart';
 
 class DateTimeUtils {
   static String formatDateTime(DateTime dateTime) {
     return DateFormat('EEE h:mm a').format(dateTime);
   }
 
-  static Future<AlarmItemView> setNextItemTime(AlarmItemView item) async {
+  static Future<AlarmEntity> setNextItemTime(AlarmEntity item) async {
     var nextTime = DateTime(
       DateTime.now().year,
       DateTime.now().month,

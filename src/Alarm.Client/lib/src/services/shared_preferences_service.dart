@@ -1,8 +1,9 @@
 import 'dart:convert';
 
-import 'package:mindr.alarm/src/models/alarm_brief_item.dart';
+import 'package:mindr.alarm/src/models/alarmSyncEntity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// TODO: Need to change to more nice way to store data that we can interact with multiple instances.
 class SharedPreferencesService {
   static Future<bool> setActiveAlarmItemId(int alarmItemId) async {
     final prefs = await SharedPreferences.getInstance();

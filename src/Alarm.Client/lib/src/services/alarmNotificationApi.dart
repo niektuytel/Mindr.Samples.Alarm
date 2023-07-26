@@ -11,7 +11,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../main.dart';
 import '../alarm_page/alarm_screen.dart';
-import '../models/alarm_item_view.dart';
+import '../models/alarmEntity.dart';
 import '../utils/datatimeUtils.dart';
 import 'alarmManagerApi.dart';
 
@@ -29,7 +29,6 @@ Future<void> notificationHandler(NotificationResponse response) async {
     if (response.actionId == 'snooze') {
       await AlarmManagerApi.snoozeAlarm(alarmItemId);
     } else if (response.actionId == 'dismiss') {
-      await AndroidAlarmManager.initialize();
       await AlarmManagerApi.stopAlarm(alarmItemId);
     }
 
@@ -50,6 +49,7 @@ class AlarmNotificationApi {
   static final _notification = FlutterLocalNotificationsPlugin();
   static final onNotifications = BehaviorSubject<NotificationResponse?>();
 
+  @pragma('vm:entry-point')
   static Future init() async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -130,8 +130,8 @@ class AlarmNotificationApi {
   @pragma('vm:entry-point')
   static Future showUpcomingNotification(
       int upcomingId, Map<String, dynamic> params) async {
-    await AlarmNotificationApi.init();
-    var alarmItem = AlarmItemView.fromMap(params);
+    // await AlarmNotificationApi.init();
+    var alarmItem = AlarmEntity.fromMap(params);
 
     if (alarmItem.enabled == false) {
       return false;
@@ -152,8 +152,7 @@ class AlarmNotificationApi {
   @pragma('vm:entry-point')
   static Future showSnoozingNotification(
       int snoozingId, Map<String, dynamic> params) async {
-    await AlarmNotificationApi.init();
-    var alarmItem = AlarmItemView.fromMap(params);
+    var alarmItem = AlarmEntity.fromMap(params);
 
     if (alarmItem.enabled == false) {
       return false;
