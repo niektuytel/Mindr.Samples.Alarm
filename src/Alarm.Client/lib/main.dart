@@ -113,3 +113,73 @@ void main() async {
 
 // TODO: Show alarm screen when the alarm is fired, to stop the alarm.
 
+// To integrate OpenID Connect (OIDC) into your Flutter Android application for 
+// user authentication, you'll typically use a library or SDK to help manage the 
+//details of the protocol. One common library used in Flutter apps for this purpose is AppAuth.
+
+// Here's a high-level overview of the process:
+
+// Create an Auth Provider: First, you'll need to set up an account with an OpenID Connect provider, 
+// which could be a service like Google, Okta, or Azure AD.
+
+// Register Your App: After creating an account, you'll need to register your application. 
+// This will typically involve providing some information about your app, such as its name and 
+// possibly the logo, and you'll get a client ID in return. You will also need to set up a redirect URI at this point.
+
+// Set Up a Redirect URI: For mobile applications, you don't use an HTTP redirect URI. Instead, 
+// you use a custom scheme that opens your app when visited. For Android apps, this 
+// typically looks like com.yourapp.package:/.
+
+// Implement OIDC in Your App: Next, you'll use an OIDC library in your application code. 
+// With Flutter, the AppAuth library is a common choice. You'll initialize the library 
+// with your client ID and redirect URI, and then use it to send the user to the login page and handle the response.
+
+// Here's some example code that shows how this might look:
+
+// dart
+// Copy code
+// import 'package:app_auth/app_auth.dart';
+// import 'package:flutter/material.dart';
+
+// void main() {
+//   runApp(MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       home: Scaffold(
+//         body: Center(
+//           child: RaisedButton(
+//             onPressed: () async {
+//               final appAuth = AppAuth();
+//               final result = await appAuth.authorizeAndExchangeCode(
+//                 AuthorizationTokenRequest(
+//                   '<client_id>',
+//                   '<redirect_url>',
+//                   issuer: '<issuer_url>',
+//                   scopes: ['openid', 'profile', 'email'],
+//                 ),
+//               );
+
+//               print('Access token: ${result.accessToken}');
+//             },
+//             child: Text('Login with OIDC'),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+// In this code, <client_id> is the ID you received when you registered your app, 
+//<redirect_url> is the custom scheme you set up, and <issuer_url> is the URL of your OIDC provider's server.
+
+// Handle the Redirect URI: After the user logs in, the OIDC provider will redirect them 
+//to your redirect URI. Your app needs to handle this URI and extract the authorization code from it. 
+//This will typically be handled by your OIDC library.
+// Note: You will need to register the custom URL scheme in your AndroidManifest.xml file.
+
+// This is a very simplified view of the process, and actual implementation can get quite complex, 
+//especially when you take into account things like token renewal, error handling, and storing tokens securely. 
+//It's recommended to thoroughly understand the OIDC flow and best practices before implementing this in a production application.
