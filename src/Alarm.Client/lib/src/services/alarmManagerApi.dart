@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 import '../models/AlarmEntity.dart';
+import '../models/AlarmEntity.dart';
 import '../utils/datetimeUtils.dart';
 import 'alarmTriggerApi.dart';
 import 'alarmNotificationApi.dart';
@@ -29,7 +30,7 @@ class AlarmManagerApi {
       if (alarm.scheduledDays.isEmpty == false) {
         // set next alarm
         alarm = await DateTimeUtils.setNextItemTime(alarm);
-        print('Schedule alarm: ${alarm.toMap().toString()}');
+        print('Schedule alarm: ${alarm.toJson().toString()}');
 
         await dbHelper.updateAlarm(alarm);
         await scheduleAlarm(alarm);
@@ -57,7 +58,7 @@ class AlarmManagerApi {
 
     // show alarm notification
     await AlarmNotificationApi.showSnoozingNotification(
-        snoozingId, alarm.toMap());
+        snoozingId, alarm.toJson());
 
     debugPrint('Scheduling alarm ...');
     var isSuccess = await AndroidAlarmManager.oneShotAt(
@@ -67,7 +68,7 @@ class AlarmManagerApi {
         rescheduleOnReboot: true,
         alarmClock: true,
         allowWhileIdle: true,
-        params: alarm.toMap());
+        params: alarm.toJson());
 
     debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
 
@@ -79,7 +80,7 @@ class AlarmManagerApi {
   static Future<bool> scheduleAlarm(AlarmEntity alarm) async {
     debugPrint('Setting alarm with id: ${alarm.id}');
 
-    if (!alarm.enabled) {
+    if (!alarm.isEnabled) {
       debugPrint('Alarm is not enabled. Cancelling...');
       await stopAlarm(alarm.id);
       return false;
@@ -96,7 +97,7 @@ class AlarmManagerApi {
         rescheduleOnReboot: true,
         alarmClock: true,
         allowWhileIdle: true,
-        params: alarm.toMap());
+        params: alarm.toJson());
 
     debugPrint(isSuccess
         ? 'Upcoming alarm set successfully'
@@ -113,7 +114,7 @@ class AlarmManagerApi {
         rescheduleOnReboot: true,
         alarmClock: true,
         allowWhileIdle: true,
-        params: alarm.toMap());
+        params: alarm.toJson());
 
     debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
 
@@ -124,7 +125,7 @@ class AlarmManagerApi {
   static Future<bool> insertAlarm(AlarmEntity alarm) async {
     alarm = await DateTimeUtils.setNextItemTime(alarm);
 
-    print('Insert alarm: ${alarm.toMap().toString()}');
+    print('Insert alarm: ${alarm.toJson().toString()}');
     await SqfliteService().insertAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
@@ -137,7 +138,7 @@ class AlarmManagerApi {
       AlarmEntity alarm, bool updateAlarmManager) async {
     alarm = await DateTimeUtils.setNextItemTime(alarm);
 
-    print('Updating alarm: ${alarm.toMap().toString()}');
+    print('Updating alarm: ${alarm.toJson().toString()}');
     await SqfliteService().updateAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)

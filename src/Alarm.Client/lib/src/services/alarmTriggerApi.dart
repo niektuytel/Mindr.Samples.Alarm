@@ -11,7 +11,7 @@ import 'package:mindr.alarm/src/services/sqflite_service.dart';
 import 'package:vibration/vibration.dart';
 
 import '../alarm_page/AlarmScreen.dart';
-import '../models/alarmEntity.dart';
+import '../models/AlarmEntityView.dart';
 import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';
 import 'alarmNotificationApi.dart';
@@ -28,7 +28,7 @@ class AlarmTriggerApi {
   @pragma('vm:entry-point')
   static Future<bool> execute(int id, Map<String, dynamic> params) async {
     // await AlarmNotificationApi.init();
-    var alarmItem = AlarmEntity.fromMap(params);
+    var alarmItem = AlarmEntityView.fromMap(params);
 
     if (alarmItem.enabled == false) {
       return false;

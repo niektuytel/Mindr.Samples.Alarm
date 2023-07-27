@@ -31,6 +31,7 @@ dependencies:
   http: any
   path: any
   image: any
+  provider: any
   flutter_localizations:
     sdk: flutter
   alarm: ^1.1.5

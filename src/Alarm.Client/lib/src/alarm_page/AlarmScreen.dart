@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mindr.alarm/src/models/AlarmEntity.dart';
+import 'package:mindr.alarm/src/models/AlarmEntityView.dart';
 import 'package:slidable_button/slidable_button.dart';
 
 import '../services/alarmManagerApi.dart';
@@ -21,7 +21,7 @@ class AlarmScreen extends StatefulWidget {
 
 class _AlarmScreenState extends State<AlarmScreen> {
   late double _dragValue;
-  late AlarmEntity _alarm;
+  late AlarmEntityView _alarm;
   final int alarmItemId;
 
   _AlarmScreenState(this.alarmItemId);
@@ -34,7 +34,8 @@ class _AlarmScreenState extends State<AlarmScreen> {
   }
 
   Future<void> _loadAlarm() async {
-    _alarm = (await SqfliteService().getAlarm(alarmItemId))!;
+    _alarm = AlarmEntityView.fromAlarmEntity(
+        (await SqfliteService().getAlarm(alarmItemId))!);
     setState(() {});
   }
 

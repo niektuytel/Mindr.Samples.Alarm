@@ -1,19 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/AlarmEntity.dart';
+import '../../models/AlarmEntityView.dart';
 import '../../services/alarmManagerApi.dart';
 
-class ScheduleDaysWidget extends StatefulWidget {
-  final AlarmEntity item;
-
-  ScheduleDaysWidget({Key? key, required this.item}) : super(key: key);
-
-  @override
-  _ScheduleDaysWidgetState createState() => _ScheduleDaysWidgetState();
-}
-
-class _ScheduleDaysWidgetState extends State<ScheduleDaysWidget> {
+class ScheduleDaysWidget extends StatelessWidget {
   String getFormattedScheduledDays(List<int> scheduledDays) {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     List<String> selectedDays = [];
@@ -34,16 +26,18 @@ class _ScheduleDaysWidgetState extends State<ScheduleDaysWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final alarmEntityView = Provider.of<AlarmEntityView>(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(getFormattedScheduledDays(widget.item.scheduledDays),
+        Text(getFormattedScheduledDays(alarmEntityView.scheduledDays),
             style: const TextStyle(fontSize: 16, color: Colors.white)),
         Switch(
-          value: widget.item.enabled,
+          value: alarmEntityView.enabled,
           onChanged: (newValue) async {
-            setState(() => widget.item.enabled = newValue);
-            await AlarmManagerApi.updateAlarm(widget.item, true);
+            alarmEntityView.enabled = newValue;
+            await AlarmManagerApi.updateAlarm(
+                alarmEntityView.toAlarmEntity(), true);
           },
           activeColor: Colors.white,
         ),

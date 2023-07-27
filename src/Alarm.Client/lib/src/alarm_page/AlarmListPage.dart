@@ -4,20 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:mindr.alarm/src/alarm_page/widgets/AlarmCardWidget.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
-import '../models/AlarmEntity.dart';
+import 'package:provider/provider.dart';
+import '../models/AlarmEntityView.dart';
 import '../services/sqflite_service.dart';
 
 class AlarmListPage extends StatefulWidget {
   static const routeName = '/';
 
-  AlarmListPage({Key? key, List<AlarmEntity>? items})
+  AlarmListPage({Key? key, List<AlarmEntityView>? items})
       : _items = items,
         super(key: key);
 
-  List<AlarmEntity>? _items = [];
+  List<AlarmEntityView>? _items = [];
 
-  List<AlarmEntity> get items => _items ?? [];
-  set items(List<AlarmEntity> value) {
+  List<AlarmEntityView> get items => _items ?? [];
+  set items(List<AlarmEntityView> value) {
     _items = value;
   }
 
@@ -44,7 +45,8 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
     SqfliteService().getAlarms().then((alarms) {
       setState(() {
-        widget.items = alarms;
+        widget.items =
+            alarms.map((e) => AlarmEntityView.fromAlarmEntity(e)).toList();
       });
     });
     _scrollController = ScrollController()..addListener(_scrollListener);
@@ -70,8 +72,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (BuildContext context, int index) {
-                return AlarmCardWidget(
-                    item: widget.items[index], items: widget.items);
+                return AlarmCardWidget(widget.items[index], widget.items);
               },
               childCount: widget.items.length,
             ),
@@ -99,21 +100,21 @@ class _AlarmListPageState extends State<AlarmListPage> {
               selectedTime.hour,
               selectedTime.minute,
             );
-
-            AlarmEntity newAlarm = AlarmEntity(
+            var newAlarm = AlarmEntityView(
               0, // Change to appropriate ID based on your requirements
               time,
               [], // Default days
               true,
               '', // Default sound
               true, // Default vibrationChecked
-              true, // Default syncWithMindr
+              false, // Default syncWithMindr
             );
             setState(() {
               widget.items.add(newAlarm);
             });
 
-            await AlarmManagerApi.insertAlarm(newAlarm);
+            var alarm = newAlarm.toAlarmEntity();
+            await AlarmManagerApi.insertAlarm(alarm);
           }
         },
       ),

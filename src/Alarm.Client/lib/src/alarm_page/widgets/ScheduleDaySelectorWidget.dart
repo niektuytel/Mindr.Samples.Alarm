@@ -1,41 +1,33 @@
 import 'package:flutter/cupertino.dart';
-
-import '../../models/AlarmEntity.dart';
+import 'package:provider/provider.dart';
+import '../../models/AlarmEntityView.dart';
 import '../../services/alarmManagerApi.dart';
 
-class ScheduleDaySelectorWidget extends StatefulWidget {
-  final AlarmEntity item;
-  final List<String> dayNames;
+class ScheduleDaySelectorWidget extends StatelessWidget {
+  final dayNames = ["S", "M", "T", "W", "T", "F", "S"];
 
-  const ScheduleDaySelectorWidget(
-      {Key? key, required this.item, required this.dayNames})
-      : super(key: key);
-
-  @override
-  _ScheduleDaySelectorWidgetState createState() =>
-      _ScheduleDaySelectorWidgetState();
-}
-
-class _ScheduleDaySelectorWidgetState extends State<ScheduleDaySelectorWidget> {
   @override
   Widget build(BuildContext context) {
-    return Row(children: _buildDaySelectors());
+    return Consumer<AlarmEntityView>(
+      builder: (context, alarmEntityView, _) =>
+          Row(children: _buildDaySelectors(context, alarmEntityView)),
+    );
   }
 
-  List<Widget> _buildDaySelectors() {
+  List<Widget> _buildDaySelectors(
+      BuildContext context, AlarmEntityView alarmEntityView) {
     return List<Widget>.generate(7, (index) {
-      bool isScheduled = widget.item.scheduledDays.contains(index + 1);
+      bool isScheduled = alarmEntityView.scheduledDays.contains(index + 1);
       return GestureDetector(
         onTap: () async {
           if (isScheduled) {
-            widget.item.scheduledDays.remove(index + 1);
+            alarmEntityView.scheduledDays.remove(index + 1);
           } else {
-            widget.item.scheduledDays.add(index + 1);
+            alarmEntityView.scheduledDays.add(index + 1);
           }
           // Now update the database
-          await AlarmManagerApi.updateAlarm(widget.item, true);
-          // After completing database update, update the state.
-          setState(() {});
+          await AlarmManagerApi.updateAlarm(
+              alarmEntityView.toAlarmEntity(), true);
         },
         child: Container(
           width: 30,
@@ -49,7 +41,7 @@ class _ScheduleDaySelectorWidgetState extends State<ScheduleDaySelectorWidget> {
             shape: BoxShape.circle,
           ),
           child: Text(
-            widget.dayNames[index],
+            dayNames[index],
             style: TextStyle(
               color: isScheduled
                   ? const Color.fromARGB(255, 44, 44, 44)

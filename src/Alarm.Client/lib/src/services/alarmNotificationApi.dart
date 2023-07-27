@@ -11,7 +11,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../main.dart';
 import '../alarm_page/AlarmScreen.dart';
-import '../models/alarmEntity.dart';
+import '../models/AlarmEntity.dart';
 import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';
 
@@ -136,8 +136,8 @@ class AlarmNotificationApi {
     );
   }
 
-  static String _getBody(String label, DateTime time) {
-    var body = label.isEmpty
+  static String _getBody(String? label, DateTime time) {
+    var body = label == null || label.isEmpty
         ? DateTimeUtils.formatDateTimeAsDay(time)
         : '${DateTimeUtils.formatDateTimeAsDay(time)} - $label';
 
@@ -156,9 +156,9 @@ class AlarmNotificationApi {
   static Future showUpcomingNotification(
       int upcomingId, Map<String, dynamic> params) async {
     // await AlarmNotificationApi.init();
-    var alarmItem = AlarmEntity.fromMap(params);
+    var alarmItem = AlarmEntity.fromJson(params);
 
-    if (alarmItem.enabled == false) {
+    if (alarmItem.isEnabled == false) {
       return false;
     }
 
@@ -177,9 +177,9 @@ class AlarmNotificationApi {
   @pragma('vm:entry-point')
   static Future showSnoozingNotification(
       int snoozingId, Map<String, dynamic> params) async {
-    var alarmItem = AlarmEntity.fromMap(params);
+    var alarmItem = AlarmEntity.fromJson(params);
 
-    if (alarmItem.enabled == false) {
+    if (alarmItem.isEnabled == false) {
       return false;
     }
 

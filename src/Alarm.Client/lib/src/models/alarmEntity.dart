@@ -1,57 +1,50 @@
-import 'dart:ffi';
-
 class AlarmEntity {
-  AlarmEntity(
-    this.id,
-    this.time,
-    this.scheduledDays,
-    this.enabled,
+  AlarmEntity({
+    required this.id,
+    this.userId,
+    this.connectionId,
+    required this.time,
+    this.scheduledDays = "",
+    this.label,
     this.sound,
-    this.vibrationChecked,
-    this.syncWithMindr,
-  );
+    this.isEnabled = true,
+    this.useVibration = true,
+    this.syncWithMindr = false,
+  });
 
   int id;
-  String label = "test";
+  String? userId;
+  String? connectionId;
   DateTime time;
-  List<int> scheduledDays;
-  bool enabled;
-  String sound;
-  bool vibrationChecked;
+  String scheduledDays;
+  String? label;
+  String? sound;
+  bool isEnabled;
+  bool useVibration;
   bool syncWithMindr;
 
-  bool isExpanded = false;
+  AlarmEntity.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        userId = json['userId'],
+        connectionId = json['connectionId'],
+        time = DateTime.parse(json['time']),
+        scheduledDays = json['scheduledDays'],
+        label = json['label'],
+        sound = json['sound'],
+        isEnabled = json['isEnabled'],
+        useVibration = json['useVibration'],
+        syncWithMindr = json['syncWithMindr'];
 
-  // Convert a AlarmItem into a Map. The keys must correspond to the names of the
-  // columns in the database.
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'time': time.toIso8601String(),
-      'label': label,
-      'scheduledDays':
-          scheduledDays.join(','), // Convert list to comma-separated string
-      'isEnabled': enabled ? 1 : 0,
-      'sound': sound,
-      'vibrationChecked': vibrationChecked ? 1 : 0,
-      'syncWithMindr': syncWithMindr ? 1 : 0,
-    };
-  }
-
-  // Create a AlarmItem from a Map.
-  AlarmEntity.fromMap(Map<String, dynamic> map)
-      : id = map['id'],
-        time = DateTime.parse(map['time']),
-        label = map['label'],
-        scheduledDays =
-            map['scheduledDays'] == null || map['scheduledDays'].isEmpty
-                ? []
-                : (map['scheduledDays'] as String)
-                    .split(',')
-                    .map((item) => int.parse(item.toString()))
-                    .toList(),
-        enabled = map['isEnabled'] == 1,
-        sound = map['sound'],
-        vibrationChecked = map['vibrationChecked'] == 1,
-        syncWithMindr = map['syncWithMindr'] == 1;
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'userId': userId,
+        'connectionId': connectionId,
+        'time': time.toIso8601String(),
+        'scheduledDays': scheduledDays,
+        'label': label,
+        'sound': sound,
+        'isEnabled': isEnabled,
+        'useVibration': useVibration,
+        'syncWithMindr': syncWithMindr,
+      };
 }
