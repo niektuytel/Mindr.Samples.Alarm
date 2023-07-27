@@ -107,7 +107,7 @@ void main() async {
 // -
 
 // TODO: When the alarm is fired and the app is STILL in the background, and we click on the alarm notification.
-//    The alarm screen is not shown to put the alarm off.
+//    The alarm screen is not shown to put the alarm off. (shared preferences issue)
 // Debug:
 //      Notification ssed to run in foreground service as it has not been removed from the background.
 

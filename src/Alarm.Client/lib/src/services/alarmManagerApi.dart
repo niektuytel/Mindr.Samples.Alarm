@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 import '../models/alarmEntity.dart';
-import '../utils/datatimeUtils.dart';
+import '../utils/datetimeUtils.dart';
 import 'alarmTriggerApi.dart';
 import 'alarmNotificationApi.dart';
 
@@ -14,23 +14,29 @@ class AlarmManagerApi {
   static Future stopAlarm(int id) async {
     try {
       SqfliteService dbHelper = SqfliteService();
-      AlarmEntity? alarmItem = await dbHelper.getAlarm(id);
+      AlarmEntity? alarm = await dbHelper.getAlarm(id);
 
-      if (alarmItem == null) {
+      if (alarm == null) {
         debugPrint('No alarm found with id: $id');
         return null;
       }
+      debugPrint('Stopping alarm with id: ${alarm.id}');
 
-      debugPrint('Stopping alarm with id: ${alarmItem.id}');
-      if (alarmItem.scheduledDays.isEmpty) {
-        // stop alarm
-        await FlutterForegroundTask.stopService();
-      } else {
-        // stop alarm and set next alarm
-        alarmItem = await DateTimeUtils.setNextItemTime(alarmItem);
-        await dbHelper.updateAlarm(alarmItem);
-        await scheduleAlarm(alarmItem);
+      // stop current notification
+      await cancelAllAlarmNotifications(alarm.id);
+
+      debugPrint('scheduleDays: ${alarm.scheduledDays}');
+      if (alarm.scheduledDays.isEmpty == false) {
+        // set next alarm
+        alarm = await DateTimeUtils.setNextItemTime(alarm);
+        print('Schedule alarm: ${alarm.toMap().toString()}');
+
+        await dbHelper.updateAlarm(alarm);
+        await scheduleAlarm(alarm);
       }
+
+      // cancel the alarm
+      await FlutterForegroundTask.stopService();
     } catch (e) {
       debugPrint('Error in stopAlarm: $e');
     }
@@ -44,9 +50,6 @@ class AlarmManagerApi {
     if (alarm == null) {
       return;
     }
-
-    // cancel the alarm
-    await FlutterForegroundTask.stopService();
 
     // set alarm time to 10 minutes from now
     alarm.time = DateTime.now().add(Duration(minutes: 10));
@@ -67,14 +70,14 @@ class AlarmManagerApi {
         params: alarm.toMap());
 
     debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
+
+    // cancel the alarm
+    await FlutterForegroundTask.stopService();
   }
 
   @pragma('vm:entry-point')
   static Future<bool> scheduleAlarm(AlarmEntity alarm) async {
     debugPrint('Setting alarm with id: ${alarm.id}');
-
-    // cancel the alarm(if runs, be sure to cancel it)
-    await FlutterForegroundTask.stopService();
 
     if (!alarm.enabled) {
       debugPrint('Alarm is not enabled. Cancelling...');
@@ -119,9 +122,9 @@ class AlarmManagerApi {
 
   @pragma('vm:entry-point')
   static Future<bool> insertAlarm(AlarmEntity alarm) async {
-    print('Insert alarm: ${alarm.toMap().toString()}');
-
     alarm = await DateTimeUtils.setNextItemTime(alarm);
+
+    print('Insert alarm: ${alarm.toMap().toString()}');
     await SqfliteService().insertAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
@@ -132,14 +135,15 @@ class AlarmManagerApi {
   @pragma('vm:entry-point')
   static Future<bool> updateAlarm(
       AlarmEntity alarm, bool updateAlarmManager) async {
-    print('Updating alarm: ${alarm.toMap().toString()}');
-
     alarm = await DateTimeUtils.setNextItemTime(alarm);
+
+    print('Updating alarm: ${alarm.toMap().toString()}');
     await SqfliteService().updateAlarm(alarm);
 
     // todo: add alarm to api when have internet connection (no authentication needed, will delete items from api when not been used)
 
     if (updateAlarmManager) {
+      cancelAllAlarmNotifications(alarm.id);
       return await AlarmManagerApi.scheduleAlarm(alarm);
     }
 
@@ -153,6 +157,17 @@ class AlarmManagerApi {
 
     await AlarmManagerApi.stopAlarm(id);
     await SqfliteService().deleteAlarm(id);
+  }
+
+  static Future cancelAllAlarmNotifications(int id) async {
+    // stop current alarm
+    var upcomingId = AlarmNotificationApi.getUpcomingId(id);
+    await AndroidAlarmManager.cancel(upcomingId);
+    AlarmNotificationApi.cancel(upcomingId);
+
+    var snoozingId = AlarmNotificationApi.getSnoozingId(id);
+    await AndroidAlarmManager.cancel(snoozingId);
+    AlarmNotificationApi.cancel(snoozingId);
   }
 }
 

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mindr.alarm/src/models/alarmEntity.dart';
 import 'package:slidable_button/slidable_button.dart';
 
 import '../services/alarmManagerApi.dart';
+import '../services/alarmNotificationApi.dart';
+import '../services/sqflite_service.dart';
+import '../utils/datetimeUtils.dart';
 
 class AlarmScreen extends StatefulWidget {
   // below 0 is wrong value
@@ -17,6 +21,7 @@ class AlarmScreen extends StatefulWidget {
 
 class _AlarmScreenState extends State<AlarmScreen> {
   late double _dragValue;
+  late AlarmEntity _alarm;
   final int alarmItemId;
 
   _AlarmScreenState(this.alarmItemId);
@@ -24,8 +29,13 @@ class _AlarmScreenState extends State<AlarmScreen> {
   @override
   void initState() {
     super.initState();
-
+    _loadAlarm();
     _dragValue = 0.0;
+  }
+
+  Future<void> _loadAlarm() async {
+    _alarm = (await SqfliteService().getAlarm(alarmItemId))!;
+    setState(() {});
   }
 
   String _formatDateTime(DateTime dateTime) {
@@ -51,7 +61,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
                     textAlign: TextAlign.center,
                   ),
                   Text(
-                    'Alarm',
+                    getBody(_alarm.label, _alarm.time),
                     style: TextStyle(fontSize: 40, color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
@@ -108,6 +118,14 @@ class _AlarmScreenState extends State<AlarmScreen> {
         ],
       ),
     );
+  }
+
+  static String getBody(String label, DateTime time) {
+    var body = label.isEmpty
+        ? DateTimeUtils.formatDateTimeAs24HoursFormat(time)
+        : '${DateTimeUtils.formatDateTimeAs24HoursFormat(time)} - $label';
+
+    return body;
   }
 
   @override

@@ -12,7 +12,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../main.dart';
 import '../alarm_page/alarm_screen.dart';
 import '../models/alarmEntity.dart';
-import '../utils/datatimeUtils.dart';
+import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';
 
 // This must be a top-level function, outside of any class.
@@ -49,6 +49,10 @@ class AlarmNotificationApi {
   static final _notification = FlutterLocalNotificationsPlugin();
   static final onNotifications = BehaviorSubject<NotificationResponse?>();
 
+  static const String upcomingChannelId = 'mindr_upcoming_alarms_channel';
+  static const String snoozedChannelId = 'mindr_snoozed_alarms_channel';
+  static const String missedChannelId = 'mindr_missed_alarms_channel';
+
   @pragma('vm:entry-point')
   static Future init() async {
     const AndroidInitializationSettings androidSettings =
@@ -62,6 +66,12 @@ class AlarmNotificationApi {
       onNotifications.add(details.notificationResponse);
     }
 
+    // // ask for permission
+    // await _notification
+    //     .resolvePlatformSpecificImplementation<
+    //         AndroidFlutterLocalNotificationsPlugin>()!
+    //     .requestPermission();
+
     await _notification.initialize(
       notificationsettings,
       onDidReceiveNotificationResponse: notificationHandler,
@@ -69,52 +79,67 @@ class AlarmNotificationApi {
     );
   }
 
-  static NotificationDetails _getUpcomingDetails(String channelId) {
-    var androidDetails = AndroidNotificationDetails(
-      channelId,
-      'Upcoming Alarm',
-      importance: Importance.high,
-      priority: Priority.defaultPriority,
-      showWhen: true,
-      styleInformation: DefaultStyleInformation(true, true),
-      ongoing: true,
-      autoCancel: false,
-      actions: <AndroidNotificationAction>[
-        const AndroidNotificationAction('dismiss', 'Dismiss',
-            titleColor: Color.fromRGBO(28, 56, 134, 1), icon: null)
-      ],
-    );
-
-    return NotificationDetails(
-      android: androidDetails,
+  static NotificationDetails _getUpcomingDetails() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        upcomingChannelId,
+        'Upcoming alarms',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        styleInformation: DefaultStyleInformation(true, true),
+        ongoing: true,
+        autoCancel: false,
+        actions: <AndroidNotificationAction>[
+          AndroidNotificationAction('dismiss', 'Dismiss',
+              titleColor: Color.fromRGBO(28, 56, 134, 1), icon: null)
+        ],
+      ),
     );
   }
 
-  static NotificationDetails _getSnoozingDetials(String channelId) {
-    var androidDetails = AndroidNotificationDetails(
-      channelId,
-      'Snoozed Alarm',
-      importance: Importance.high,
-      priority: Priority.defaultPriority,
-      showWhen: true,
-      ongoing: true, // to play sound when the notification shows
-      styleInformation: DefaultStyleInformation(true, true),
-      autoCancel:
-          false, // Prevents the notification from being dismissed when user taps on it.
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
-      ],
+  static NotificationDetails _getSnoozingDetials() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        snoozedChannelId,
+        'Snoozed alarms',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        ongoing: true, // to play sound when the notification shows
+        styleInformation: DefaultStyleInformation(true, true),
+        autoCancel:
+            false, // Prevents the notification from being dismissed when user taps on it.
+        actions: <AndroidNotificationAction>[
+          AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
+        ],
+      ),
     );
+  }
 
-    return NotificationDetails(
-      android: androidDetails,
+  static NotificationDetails _getMissedDetials() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        missedChannelId,
+        'Missed alarms',
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        showWhen: true,
+        ongoing: true, // to play sound when the notification shows
+        styleInformation: DefaultStyleInformation(true, true),
+        autoCancel:
+            false, // Prevents the notification from being dismissed when user taps on it.
+        // actions: <AndroidNotificationAction>[
+        //   AndroidNotificationAction('dismiss', 'Dismiss', icon: null)
+        // ],
+      ),
     );
   }
 
   static String _getBody(String label, DateTime time) {
     var body = label.isEmpty
-        ? DateTimeUtils.formatDateTime(time)
-        : '${DateTimeUtils.formatDateTime(time)} - $label';
+        ? DateTimeUtils.formatDateTimeAsDay(time)
+        : '${DateTimeUtils.formatDateTimeAsDay(time)} - $label';
 
     return body;
   }
@@ -139,7 +164,7 @@ class AlarmNotificationApi {
 
     var title = "Upcoming alarm";
     var body = _getBody(alarmItem.label, alarmItem.time);
-    var details = _getUpcomingDetails(upcomingId.toString());
+    final details = _getUpcomingDetails();
     var payload = jsonEncode({
       'alarm_id': alarmItem.id,
       'open_alarm_onclick': true,
@@ -160,7 +185,7 @@ class AlarmNotificationApi {
 
     var title = "Snoozed alarm";
     var body = _getBody(alarmItem.label, alarmItem.time);
-    var details = _getSnoozingDetials(snoozingId.toString());
+    final details = _getSnoozingDetials();
     var payload = jsonEncode({
       'alarm_id': alarmItem.id,
       'open_alarm_onclick': true,
@@ -168,6 +193,10 @@ class AlarmNotificationApi {
 
     await _notification.show(snoozingId, title, body, details,
         payload: payload);
+  }
+
+  static void cancel(int id) async {
+    await _notification.cancel(id);
   }
 
   static void cancelUpcomingNotification(int id) async {

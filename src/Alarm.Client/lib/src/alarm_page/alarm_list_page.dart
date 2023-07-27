@@ -7,10 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
-import '../mindr_page/mindr_view.dart';
 import '../models/alarmEntity.dart';
 import '../services/alarmNotificationApi.dart';
 import '../services/sqflite_service.dart';
+import '../utils/datetimeUtils.dart';
 import 'alarm_screen.dart';
 
 class AlarmListPage extends StatefulWidget {
@@ -156,7 +156,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
       icon: const Icon(Icons.more_vert, color: Colors.white),
       onSelected: (value) {
         if (value == 0) {
-          Navigator.restorablePushNamed(context, MindrView.routeName);
+          // Navigator.restorablePushNamed(context, MindrView.routeName);
         } else if (value == 1) {
           //TODO: Navigator.restorablePushNamed(context, FeedbackView.routeName);
         } else if (value == 2) {
@@ -269,8 +269,14 @@ class _AlarmListPageState extends State<AlarmListPage> {
         children: [
           Row(children: [..._buildDaySelectors(item, dayNames)]),
           _buildLabelInput(item),
+          _buildSpecificTimeText(item),
           _buildSwitchRow(item.vibrationChecked, 'Vibration', (value) async {
             setState(() => item.vibrationChecked = value!);
+            await AlarmManagerApi.updateAlarm(item, false);
+          }),
+          _buildSwitchRow(item.syncWithMindr, 'Connected to mindr',
+              (value) async {
+            setState(() => item.syncWithMindr = value!);
             await AlarmManagerApi.updateAlarm(item, false);
           }),
           Row(
@@ -280,30 +286,12 @@ class _AlarmListPageState extends State<AlarmListPage> {
                 child: TextButton.icon(
                   onPressed: () async {
                     await AlarmManagerApi.deleteAlarm(item.id);
-                    setState(() {
-                      widget.items.remove(item);
-                    });
+                    widget.items.remove(item);
+                    setState(() {});
                   },
                   icon: Icon(Icons.delete, color: Colors.white),
                   label: Text(
                     'Delete',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: () async {
-                    setState(() {
-                      item.syncWithMindr = !item.syncWithMindr;
-                      SqfliteService()
-                          .updateAlarm(item); // update in the database
-                    });
-                  },
-                  icon: Icon(item.syncWithMindr ? Icons.link : Icons.link_off,
-                      color: Colors.white),
-                  label: Text(
-                    'Bind with Mindr',
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
@@ -335,6 +323,43 @@ class _AlarmListPageState extends State<AlarmListPage> {
           item.label = value;
           await AlarmManagerApi.updateAlarm(item, false);
         },
+      ),
+    );
+  }
+
+  Widget _buildSpecificTimeText(AlarmEntity item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3.0),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Next',
+          labelStyle: TextStyle(color: Colors.white),
+          border: InputBorder.none,
+        ),
+        child: Text(
+          DateTimeUtils.formatDateTimeAsDate(item.time),
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpecificTimeInput(AlarmEntity item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Time',
+            style: TextStyle(
+                color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            item.label, // Display the label text from the item
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ],
       ),
     );
   }
@@ -426,21 +451,20 @@ Future<void> _requestPermissionForAndroid() async {
     return;
   }
 
-  // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
-  // onNotificationPressed function to be called.
-  //
-  // When the notification is pressed while permission is denied,
-  // the onNotificationPressed function is not called and the app opens.
-  //
-  // If you do not use the onNotificationPressed or launchApp function,
-  // you do not need to write this code.
-  if (!await FlutterForegroundTask.canDrawOverlays) {
-    // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
-    await FlutterForegroundTask.openSystemAlertWindowSettings();
-  }
+  // // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
+  // // onNotificationPressed function to be called.
+  // //
+  // // When the notification is pressed while permission is denied,
+  // // the onNotificationPressed function is not called and the app opens.
+  // //
+  // // If you do not use the onNotificationPressed or launchApp function,
+  // // you do not need to write this code.
+  // if (!await FlutterForegroundTask.canDrawOverlays) {
+  //   // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
+  //   await FlutterForegroundTask.openSystemAlertWindowSettings();
+  // }
 
   // Android 12 or higher, there are restrictions on starting a foreground service.
-  //
   // To restart the service on device reboot or unexpected problem, you need to allow below permission.
   if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
     // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.

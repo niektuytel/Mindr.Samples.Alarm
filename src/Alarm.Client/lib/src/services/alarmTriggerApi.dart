@@ -12,7 +12,7 @@ import 'package:vibration/vibration.dart';
 
 import '../alarm_page/alarm_screen.dart';
 import '../models/alarmEntity.dart';
-import '../utils/datatimeUtils.dart';
+import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';
 import 'alarmNotificationApi.dart';
 
@@ -40,10 +40,10 @@ class AlarmTriggerApi {
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         id: id,
-        channelId: 'triggered_alarm',
-        channelName: 'Alarm',
-        channelImportance: NotificationChannelImportance.LOW,
-        priority: NotificationPriority.LOW,
+        channelId: 'mindr_triggered_alarms_channel',
+        channelName: 'Triggered alarms',
+        channelImportance: NotificationChannelImportance.HIGH,
+        priority: NotificationPriority.HIGH,
         buttons: [
           const NotificationButton(
             id: 'snooze',
@@ -71,8 +71,8 @@ class AlarmTriggerApi {
     );
 
     String body = alarmItem.label.isEmpty
-        ? DateTimeUtils.formatDateTime(alarmItem.time)
-        : '${DateTimeUtils.formatDateTime(alarmItem.time)} - ${alarmItem.label}';
+        ? DateTimeUtils.formatDateTimeAsDay(alarmItem.time)
+        : '${DateTimeUtils.formatDateTimeAsDay(alarmItem.time)} - ${alarmItem.label}';
 
     // You can save data using the saveData function.
     await FlutterForegroundTask.saveData(key: 'alarmItemId', value: id);
@@ -170,6 +170,8 @@ class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
     if (actionId == 'snooze') {
       await AlarmManagerApi.snoozeAlarm(_alarmItemId);
     } else if (actionId == 'dismiss') {
+      await AlarmNotificationApi.init();
+      await AndroidAlarmManager.initialize();
       await AlarmManagerApi.stopAlarm(_alarmItemId);
     }
   }

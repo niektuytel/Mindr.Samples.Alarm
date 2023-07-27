@@ -3,11 +3,23 @@ import 'package:intl/intl.dart';
 import '../models/alarmEntity.dart';
 
 class DateTimeUtils {
-  static String formatDateTime(DateTime dateTime) {
+  static String formatDateTimeAs24HoursFormat(DateTime dateTime) {
+    return "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+  }
+
+  static String formatDateTimeAsDay(DateTime dateTime) {
     return DateFormat('EEE h:mm a').format(dateTime);
   }
 
+  static String formatDateTimeAsDate(DateTime dateTime) {
+    return DateFormat('dd/MM/yyyy HH:mm:ss').format(dateTime);
+  }
+
   static Future<AlarmEntity> setNextItemTime(AlarmEntity item) async {
+    // item.time = DateTime.now().add(Duration(hours: 2, seconds: 10));
+    // print('Next time: ${item.time}');
+    // return item;
+
     var nextTime = DateTime(
       DateTime.now().year,
       DateTime.now().month,
