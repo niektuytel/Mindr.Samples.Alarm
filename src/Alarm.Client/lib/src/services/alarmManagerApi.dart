@@ -26,7 +26,7 @@ class AlarmManagerApi {
       await cancelAllAlarmNotifications(alarm.id);
 
       debugPrint('scheduleDays: ${alarm.scheduledDays}');
-      if (alarm.scheduledDays.isEmpty == false) {
+      if (alarm.scheduledDays.isEmpty == false && alarm.enabled) {
         // set next alarm
         alarm = await DateTimeUtils.setNextItemTime(alarm);
         print('Schedule alarm: ${alarm.toMap().toString()}');

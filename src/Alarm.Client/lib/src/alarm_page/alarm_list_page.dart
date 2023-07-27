@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -31,17 +32,50 @@ class AlarmListPage extends StatefulWidget {
   State<StatefulWidget> createState() => _AlarmListPageState();
 }
 
-class _AlarmListPageState extends State<AlarmListPage> {
+class _AlarmListPageState extends State<AlarmListPage>
+    with SingleTickerProviderStateMixin {
+  SyncStatus syncStatus = SyncStatus.synced; // Assume synced initially
+
   late final ScrollController _scrollController;
+  late AnimationController _syncIconController;
+
   Color _appBarColor = Colors.transparent;
   int alarmId = 0;
   Timer? _daySelectionTimer;
   Timer? _vibrationChangeTimer;
 
+  Future<void> syncWithServer() async {
+    setState(() {
+      syncStatus = SyncStatus.syncing;
+    });
+
+    try {
+      // Your HTTP request here...
+      // For the sake of example, I'll just delay for 2 seconds.
+      await Future.delayed(Duration(seconds: 2));
+
+      // After a successful HTTP request...
+      setState(() {
+        syncStatus = SyncStatus.synced;
+      });
+    } catch (error) {
+      // If the HTTP request fails...
+      setState(() {
+        syncStatus = SyncStatus.notSynced;
+      });
+    }
+  }
+
   @override
   void initState() {
     // loadAllNotifications;
     super.initState();
+
+    _syncIconController = AnimationController(
+      vsync: this,
+      duration: const Duration(
+          seconds: 2), // This is the duration for one complete revolution.
+    )..repeat(); // This will keep the animation ongoing.
 
     // // Foreground task
     // WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -146,8 +180,32 @@ class _AlarmListPageState extends State<AlarmListPage> {
       pinned: true,
       backgroundColor: _appBarColor,
       title: const Text('Alarm'),
-      actions: [_buildPopupMenu()],
+      actions: [
+        IconButton(
+          icon: _buildSyncIcon(),
+          onPressed: syncWithServer,
+        ),
+        _buildPopupMenu(),
+      ],
     );
+  }
+
+  Widget _buildSyncIcon() {
+    if (syncStatus == SyncStatus.syncing) {
+      return AnimatedBuilder(
+        animation: _syncIconController,
+        builder: (_, __) {
+          return Transform.rotate(
+            angle: -_syncIconController.value * 2 * pi,
+            child: Icon(Icons.sync, color: Colors.white),
+          );
+        },
+      );
+    } else if (syncStatus == SyncStatus.notSynced) {
+      return Icon(Icons.sync_problem, color: Colors.red);
+    } else {
+      return Icon(Icons.sync, color: Colors.white);
+    }
   }
 
   Widget _buildPopupMenu() {
@@ -420,6 +478,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _syncIconController.dispose();
     _daySelectionTimer
         ?.cancel(); // make sure to dispose the timer when not needed
     _vibrationChangeTimer
@@ -444,6 +503,12 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
     return selectedDays.join(', ');
   }
+}
+
+enum SyncStatus {
+  synced, // Successfully synced with the server
+  syncing, // Currently syncing with the server
+  notSynced, // Failed to sync with the server or haven't synced yet
 }
 
 Future<void> _requestPermissionForAndroid() async {
