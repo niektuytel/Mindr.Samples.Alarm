@@ -10,7 +10,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../main.dart';
-import '../alarm_page/alarm_screen.dart';
+import '../alarm_page/AlarmScreen.dart';
 import '../models/alarmEntity.dart';
 import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';

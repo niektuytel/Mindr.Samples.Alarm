@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-import '../models/alarmEntity.dart';
+import '../models/AlarmEntity.dart';
 
 class DateTimeUtils {
   static String formatDateTimeAs24HoursFormat(DateTime dateTime) {

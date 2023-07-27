@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:mindr.alarm/src/models/alarmSyncEntity.dart';
+import 'package:mindr.alarm/src/models/AlarmSyncEntity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // TODO: Need to change to more nice way to store data that we can interact with multiple instances.

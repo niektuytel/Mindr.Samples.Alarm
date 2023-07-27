@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mindr.alarm/src/models/alarmEntity.dart';
+import 'package:mindr.alarm/src/models/AlarmEntity.dart';
 import 'package:slidable_button/slidable_button.dart';
 
 import '../services/alarmManagerApi.dart';

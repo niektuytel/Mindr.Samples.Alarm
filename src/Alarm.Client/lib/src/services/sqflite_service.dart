@@ -5,7 +5,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io' as io;
 import 'dart:async';
 
-import '../models/alarmEntity.dart';
+import '../models/AlarmEntity.dart';
 
 class SqfliteService {
   static Database? _db;

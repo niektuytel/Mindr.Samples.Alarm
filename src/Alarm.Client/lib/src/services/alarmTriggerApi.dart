@@ -10,7 +10,7 @@ import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
 import 'package:mindr.alarm/src/services/sqflite_service.dart';
 import 'package:vibration/vibration.dart';
 
-import '../alarm_page/alarm_screen.dart';
+import '../alarm_page/AlarmScreen.dart';
 import '../models/alarmEntity.dart';
 import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';
