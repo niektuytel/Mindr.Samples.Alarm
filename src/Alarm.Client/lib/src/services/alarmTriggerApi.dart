@@ -168,6 +168,8 @@ class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
 
     // This is called when a notification or its action is tapped.
     if (actionId == 'snooze') {
+      await AlarmNotificationApi.init();
+      await AndroidAlarmManager.initialize();
       await AlarmManagerApi.snoozeAlarm(_alarmItemId);
     } else if (actionId == 'dismiss') {
       await AlarmNotificationApi.init();

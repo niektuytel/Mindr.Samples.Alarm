@@ -15,15 +15,16 @@ class DateTimeUtils {
     return DateFormat('dd/MM/yyyy HH:mm:ss').format(dateTime);
   }
 
-  static Future<AlarmEntity> setNextItemTime(AlarmEntity item) async {
+  static Future<AlarmEntity> setNextItemTime(
+      AlarmEntity item, DateTime chakeOnDateTime) async {
     // item.time = DateTime.now().add(Duration(hours: 2, seconds: 10));
     // print('Next time: ${item.time}');
     // return item;
 
     var nextTime = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
+      chakeOnDateTime.year,
+      chakeOnDateTime.month,
+      chakeOnDateTime.day,
       item.time.hour,
       item.time.minute,
     );
@@ -31,7 +32,7 @@ class DateTimeUtils {
     if (!item.enabled) {
       return item;
     } else if (item.scheduledDays.isEmpty) {
-      if (nextTime.isBefore(DateTime.now())) {
+      if (nextTime.isBefore(chakeOnDateTime)) {
         nextTime = nextTime.add(Duration(days: 1));
       }
 
@@ -40,19 +41,20 @@ class DateTimeUtils {
       return item;
     }
 
-    item.scheduledDays.sort();
+    var scheduledDays = item.scheduledDays;
+    scheduledDays.sort();
+
     var dayOfWeek = nextTime.weekday + 1;
-    var nextDay = item.scheduledDays.firstWhere(
-        (element) => element > dayOfWeek,
-        orElse: () => item.scheduledDays.first);
+    var nextDay = scheduledDays.firstWhere((element) => element > dayOfWeek,
+        orElse: () => scheduledDays.first);
 
     // calculate the number of days to add
     int daysToAdd =
         (nextDay > dayOfWeek ? nextDay - dayOfWeek : 7 - dayOfWeek + nextDay);
 
     // if the next day is today, add 7 days if the time is before now
-    if (item.scheduledDays.contains(dayOfWeek) &&
-        nextTime.isAfter(DateTime.now())) {
+    if (scheduledDays.contains(dayOfWeek) &&
+        nextTime.isAfter(chakeOnDateTime)) {
       item.time = nextTime;
       print(
           'Next time: ${item.time} [nextDay: $nextDay, dayOfWeek: $dayOfWeek daysToAdd: $daysToAdd]');

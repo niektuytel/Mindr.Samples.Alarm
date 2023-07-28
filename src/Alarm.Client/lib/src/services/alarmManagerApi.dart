@@ -28,7 +28,7 @@ class AlarmManagerApi {
       debugPrint('scheduleDays: ${alarm.scheduledDays}');
       if (alarm.scheduledDays.isEmpty == false && alarm.enabled) {
         // set next alarm
-        alarm = await DateTimeUtils.setNextItemTime(alarm);
+        alarm = await DateTimeUtils.setNextItemTime(alarm, alarm.time);
         print('Schedule alarm: ${alarm.toMap().toString()}');
 
         await dbHelper.updateAlarm(alarm);
@@ -122,7 +122,7 @@ class AlarmManagerApi {
 
   @pragma('vm:entry-point')
   static Future<bool> insertAlarm(AlarmEntity alarm) async {
-    alarm = await DateTimeUtils.setNextItemTime(alarm);
+    alarm = await DateTimeUtils.setNextItemTime(alarm, DateTime.now());
 
     print('Insert alarm: ${alarm.toMap().toString()}');
     await SqfliteService().insertAlarm(alarm);
@@ -135,7 +135,7 @@ class AlarmManagerApi {
   @pragma('vm:entry-point')
   static Future<bool> updateAlarm(
       AlarmEntity alarm, bool updateAlarmManager) async {
-    alarm = await DateTimeUtils.setNextItemTime(alarm);
+    alarm = await DateTimeUtils.setNextItemTime(alarm, DateTime.now());
 
     print('Updating alarm: ${alarm.toMap().toString()}');
     await SqfliteService().updateAlarm(alarm);
