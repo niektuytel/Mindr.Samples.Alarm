@@ -1,4 +1,6 @@
 ﻿using Alarm.Api.Models.Alarm;
+using Alarm.Api.Models.AlarmAction;
+using Alarm.Api.Models.AlarmConnection;
 using AutoMapper;
 using System;
 using System.Collections.Generic;
@@ -12,27 +14,14 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<AlarmOnCreate, AlarmEntity>()
-            .ForMember(dest => dest.MindrUserId, opt => opt.MapFrom(src => src.MindrUserId))
-            .ForMember(dest => dest.MindrConnectionId, opt => opt.MapFrom(src => src.MindrConnectionId))
-            .ForMember(dest => dest.Time, opt => opt.MapFrom(src => src.Time))
-            .ForMember(dest => dest.ScheduledDays, opt => opt.MapFrom(src => src.ScheduledDays != null ? string.Join(",", src.ScheduledDays) : ""))
-            .ForMember(dest => dest.Label, opt => opt.MapFrom(src => src.Label))
-            .ForMember(dest => dest.Sound, opt => opt.MapFrom(src => src.Sound))
-            .ForMember(dest => dest.IsEnabled, opt => opt.MapFrom(src => src.IsEnabled))
-            .ForMember(dest => dest.UseVibration, opt => opt.MapFrom(src => src.UseVibration))
-        ;
+        CreateMap<AlarmOnPush, AlarmDTO>();
+        CreateMap<AlarmActionOnPush, AlarmActionEntity>()
+            .ForMember(dest => dest.PartitionKey, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => Guid.NewGuid().ToString()));
 
-        CreateMap<AlarmOnUpdate, AlarmEntity>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.MindrUserId, opt => opt.MapFrom(src => src.MindrUserId))
-            .ForMember(dest => dest.MindrConnectionId, opt => opt.MapFrom(src => src.MindrConnectionId))
-            .ForMember(dest => dest.Time, opt => opt.MapFrom(src => src.Time))
-            .ForMember(dest => dest.ScheduledDays, opt => opt.MapFrom(src => src.ScheduledDays != null ? string.Join(",", src.ScheduledDays) : ""))
-            .ForMember(dest => dest.Label, opt => opt.MapFrom(src => src.Label))
-            .ForMember(dest => dest.Sound, opt => opt.MapFrom(src => src.Sound))
-            .ForMember(dest => dest.IsEnabled, opt => opt.MapFrom(src => src.IsEnabled))
-            .ForMember(dest => dest.UseVibration, opt => opt.MapFrom(src => src.UseVibration))
+        CreateMap<UserDeviceOnUpsert, UserDeviceEntity>()
+            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FCMToken, opt => opt.MapFrom(src => src.FCMToken))
         ;
     }
 }

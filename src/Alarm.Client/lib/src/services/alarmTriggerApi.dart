@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
@@ -168,10 +169,12 @@ class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
 
     // This is called when a notification or its action is tapped.
     if (actionId == 'snooze') {
+      // WidgetsFlutterBinding.ensureInitialized();
       await AlarmNotificationApi.init();
       await AndroidAlarmManager.initialize();
       await AlarmManagerApi.snoozeAlarm(_alarmItemId);
     } else if (actionId == 'dismiss') {
+      // WidgetsFlutterBinding.ensureInitialized();
       await AlarmNotificationApi.init();
       await AndroidAlarmManager.initialize();
       await AlarmManagerApi.stopAlarm(_alarmItemId);

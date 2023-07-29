@@ -28,6 +28,7 @@ dependencies:
   just_audio: ^0.9.34
   intl: any
   audio_session: any
+  uuid: any
   http: any
   path: any
   image: any

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -10,9 +11,11 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
 import '../models/alarmEntity.dart';
 import '../services/alarmNotificationApi.dart';
+import '../services/shared_preferences_service.dart';
 import '../services/sqflite_service.dart';
 import '../utils/datetimeUtils.dart';
 import 'alarm_screen.dart';
+import 'package:http/http.dart' as http;
 
 class AlarmListPage extends StatefulWidget {
   static const routeName = '/';
@@ -44,22 +47,38 @@ class _AlarmListPageState extends State<AlarmListPage>
   Timer? _daySelectionTimer;
   Timer? _vibrationChangeTimer;
 
-  Future<void> syncWithServer() async {
+  Future<void> syncWithServer(String userId) async {
     setState(() {
       syncStatus = SyncStatus.syncing;
     });
 
     try {
-      // Your HTTP request here...
-      // For the sake of example, I'll just delay for 2 seconds.
-      await Future.delayed(Duration(seconds: 2));
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      final url =
+          Uri.parse('https://alarmtestapi.azurewebsites.net/api/UserDevices');
+      final data = {"user_id": userId, "fcm_token": fcmToken};
 
-      // After a successful HTTP request...
-      setState(() {
-        syncStatus = SyncStatus.synced;
-      });
+      print('data: $data');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 204) {
+        setState(() {
+          syncStatus = SyncStatus.synced;
+        });
+      } else {
+        print(' status: ${response.statusCode} response: ${response.body}');
+        // Handle unsuccessful HTTP request (status code other than 200)
+        setState(() {
+          syncStatus = SyncStatus.notSynced;
+        });
+      }
     } catch (error) {
-      // If the HTTP request fails...
+      print(error);
+      // Handle any exceptions that might occur during the HTTP request
       setState(() {
         syncStatus = SyncStatus.notSynced;
       });
@@ -176,17 +195,89 @@ class _AlarmListPageState extends State<AlarmListPage>
   }
 
   Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      pinned: true,
-      backgroundColor: _appBarColor,
-      title: const Text('Alarm'),
-      actions: [
-        IconButton(
-          icon: _buildSyncIcon(),
-          onPressed: syncWithServer,
-        ),
-        _buildPopupMenu(),
-      ],
+    return FutureBuilder<String?>(
+      future: SharedPreferencesService.getUserId(),
+      builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot.data != null) {
+            return SliverAppBar(
+              pinned: true,
+              backgroundColor: _appBarColor,
+              title: const Text('Alarm'),
+              actions: [
+                IconButton(
+                  icon: _buildSyncIcon(),
+                  onPressed: () async => await syncWithServer(snapshot.data!),
+                ),
+                _buildPopupMenu(),
+              ],
+            );
+          } else {
+            return SliverAppBar(
+              pinned: true,
+              backgroundColor: _appBarColor,
+              title: const Text('Alarm'),
+              actions: [
+                IconButton(
+                  icon: Icon(
+                      Icons.account_circle), // replace with your preferred icon
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text("Login with mindr"),
+                          content: Text(
+                              "Give mindr the ability to manage your alarms"),
+                          actions: <Widget>[
+                            TextButton(
+                              child: Text("Cancel"),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                            TextButton(
+                              child: Text("OK"),
+                              onPressed: () async {
+                                // TODO: Redirect to login page or open login dialog and return userid back
+                                var userId =
+                                    '79c0ff3d-32aa-445b-b9e5-330799cb03c1'; // test@test.com
+                                // var userId = '410786db-7682-45e5-9099-686c21626d9c'; // tuytelniek@gmail.com (3th parties, gmail/google login)
+
+                                var success =
+                                    await SharedPreferencesService.setUserId(
+                                        userId);
+                                await syncWithServer(userId);
+                                Navigator.of(context).pop();
+                                if (success) setState(() {});
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+                _buildPopupMenu(),
+              ],
+            );
+          }
+        } else {
+          // while data is loading:
+          return SliverAppBar(
+            pinned: true,
+            backgroundColor: _appBarColor,
+            title: const Text('Alarm'),
+            actions: [
+              IconButton(
+                icon: CircularProgressIndicator(), // show loading icon
+                onPressed: null,
+              ),
+              _buildPopupMenu(),
+            ],
+          );
+        }
+      },
     );
   }
 

@@ -63,10 +63,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  final fcmToken = await FirebaseMessaging.instance.getToken();
+  // final fcmToken = await FirebaseMessaging.instance.getToken();
+  // print('fcmToken: $fcmToken');
+
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseMessaging.onMessage.listen(_firebaseMessagingForegroundHandler);
-  print('fcmToken: $fcmToken');
+  print('set firebase listeners');
 
   var alarmItemId = await SharedPreferencesService.getActiveAlarmItemId();
   print("main >> ${alarmItemId}");
