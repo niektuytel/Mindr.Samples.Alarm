@@ -21,7 +21,7 @@ public class UserDeviceEntity
     public UserDeviceEntity(Guid userId, string fcmToken)
     {
         UserId = userId;
-        FCMToken = fcmToken;
+        DeviceToken = fcmToken;
     }
 
     /// <summary>
@@ -45,6 +45,6 @@ public class UserDeviceEntity
         }
     }
 
-    public string FCMToken { get; set; }
+    public string DeviceToken { get; set; }
 
 }

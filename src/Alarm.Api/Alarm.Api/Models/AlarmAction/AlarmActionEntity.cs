@@ -18,11 +18,20 @@ public class AlarmActionEntity : ITableEntity
 
     public string? AlarmJson { get; set; }
 
+    public string? LatestCloudMessageJson { get; set; }
+
     [IgnoreDataMember]
     public AlarmDTO? Alarm
     {
         get => AlarmJson == null ? null : JsonSerializer.Deserialize<AlarmDTO>(AlarmJson);
         set => AlarmJson = JsonSerializer.Serialize(value);
+    }
+
+    [IgnoreDataMember]
+    public CloudMessageResponse? LatestCloudMessage
+    {
+        get => LatestCloudMessageJson == null ? null : JsonSerializer.Deserialize<CloudMessageResponse>(LatestCloudMessageJson);
+        set => LatestCloudMessageJson = JsonSerializer.Serialize(value);
     }
 
     // Implementation of the ITableEntity interface.

@@ -26,10 +26,9 @@ class AlarmManagerApi {
       await cancelAllAlarmNotifications(alarm.id);
 
       debugPrint('scheduleDays: ${alarm.scheduledDays}');
-      if (alarm.scheduledDays.isEmpty == false && alarm.enabled) {
+      if (alarm.scheduledDays.isNotEmpty && alarm.enabled) {
         // set next alarm
         alarm = await DateTimeUtils.setNextItemTime(alarm, alarm.time);
-        print('Schedule alarm: ${alarm.toMap().toString()}');
 
         await dbHelper.updateAlarm(alarm);
         await scheduleAlarm(alarm);
@@ -86,7 +85,7 @@ class AlarmManagerApi {
     }
 
     // show upcoming alarm notification
-    debugPrint('Scheduling upcoming alarm...');
+    debugPrint('Schedule alarm: ${alarm.toMap().toString()}');
     var upcomingId = AlarmNotificationApi.getUpcomingId(alarm.id);
     var upcomingTime = alarm.time.subtract(Duration(hours: 2));
     var isSuccess = await AndroidAlarmManager.oneShotAt(

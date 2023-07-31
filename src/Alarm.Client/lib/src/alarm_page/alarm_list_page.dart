@@ -56,7 +56,7 @@ class _AlarmListPageState extends State<AlarmListPage>
       final fcmToken = await FirebaseMessaging.instance.getToken();
       final url =
           Uri.parse('https://alarmtestapi.azurewebsites.net/api/UserDevices');
-      final data = {"user_id": userId, "fcm_token": fcmToken};
+      final data = {"user_id": userId, "device_token": fcmToken};
 
       print('data: $data');
       final response = await http.post(

@@ -14,6 +14,6 @@ internal class UserDeviceOnUpsert
     public Guid UserId { get; set; }
 
     [JsonRequired]
-    [JsonPropertyName("fcm_token")]
-    public string? FCMToken { get; set; }
+    [JsonPropertyName("device_token")]
+    public string? DeviceToken { get; set; }
 }

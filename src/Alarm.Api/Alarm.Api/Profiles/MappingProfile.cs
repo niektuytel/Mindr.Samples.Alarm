@@ -21,7 +21,7 @@ public class MappingProfile : Profile
 
         CreateMap<UserDeviceOnUpsert, UserDeviceEntity>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
-            .ForMember(dest => dest.FCMToken, opt => opt.MapFrom(src => src.FCMToken))
+            .ForMember(dest => dest.DeviceToken, opt => opt.MapFrom(src => src.DeviceToken))
         ;
     }
 }

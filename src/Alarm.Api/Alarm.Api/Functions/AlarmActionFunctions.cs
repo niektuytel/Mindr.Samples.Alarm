@@ -23,22 +23,25 @@ public class AlarmActionFunctions
     private readonly IMapper _mapper;
     private readonly TableClient _tableClient;
     private readonly TableClient _userDevicesTableClient;
+    private readonly INotificationService _notificationService;
     
 
-    public AlarmActionFunctions(ILoggerFactory loggerFactory, IMapper mapper, IConfiguration configuration)
+    public AlarmActionFunctions(ILoggerFactory loggerFactory, IMapper mapper, IConfiguration configuration, INotificationService notificationService)
     {
         _logger = loggerFactory.CreateLogger<AlarmActionFunctions>();
         _mapper = mapper;
 
-        var connectionString = configuration.GetConnectionString("AlarmStorageTables");
+        var connectionString = configuration["ConnectionStrings:AlarmStorageTables"];
         _tableClient = new TableClient(connectionString, _tableName);
         _tableClient.CreateIfNotExists();
 
         _userDevicesTableClient = new TableClient(connectionString, UserDeviceFunctions.TableName);
         _userDevicesTableClient.CreateIfNotExists();
+
+        _notificationService = notificationService;
     }
     [Function(nameof(Push))]
-    public async Task<HttpResponseData> Push([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = $"{_tableName}")] HttpRequestData req)
+    public async Task<HttpResponseData> Push([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = $"{_tableName}/{nameof(Push)}")] HttpRequestData req)
     {
         var response = req.CreateResponse();
 
@@ -66,24 +69,9 @@ public class AlarmActionFunctions
             }
 
             // call fcm request to trigger user device
-            var fcmRequest = new FcmRequest
-            {
-                To = userDevice.DeviceToken,
-                Notification = new FcmNotification
-                {
-                    Title = "Alarm",
-                    Body = "Alarm triggered."
-                },
-                Data = new FcmData
-                {
-                    AlarmId = entity.AlarmId,
-                    AlarmActionId = entity.AlarmActionId,
-                    AlarmActionType = entity.AlarmActionType,
-                    AlarmActionValue = entity.AlarmActionValue,
-                    AlarmActionTime = entity.AlarmActionTime,
-                    AlarmActionStatus = entity.AlarmActionStatus
-                }
-            };  
+            var title = "New alarm";
+            var body = $"Set new alarm on: {data.Alarm.Time}";
+            entity.LatestCloudMessage = await _notificationService.SendNotificationAsync(userDevice.DeviceToken, title, body, data);
 
             var result = await _tableClient.UpsertEntityAsync(entity);
             response.StatusCode = (HttpStatusCode)result.Status;
