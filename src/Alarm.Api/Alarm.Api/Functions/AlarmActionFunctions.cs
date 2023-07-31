@@ -70,7 +70,7 @@ public class AlarmActionFunctions
 
             // call fcm request to trigger user device
             var title = "New alarm";
-            var body = $"Set new alarm on: {data.Alarm.Time}";
+            var body = string.IsNullOrEmpty(data.Alarm.Label) ? $"trigger at {data.Alarm.Time}" : $"'{data.Alarm.Label}' at {data.Alarm.Time}";
             entity.LatestCloudMessage = await _notificationService.SendNotificationAsync(userDevice.DeviceToken, title, body, data);
 
             var result = await _tableClient.UpsertEntityAsync(entity);
