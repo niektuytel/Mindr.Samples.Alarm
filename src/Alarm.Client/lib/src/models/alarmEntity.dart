@@ -1,24 +1,16 @@
 import 'dart:ffi';
 
 class AlarmEntity {
-  AlarmEntity(
-    this.id,
-    this.time,
-    this.scheduledDays,
-    this.enabled,
-    this.sound,
-    this.vibrationChecked,
-    this.syncWithMindr,
-  );
+  AlarmEntity(this.time);
 
-  int id;
+  int id = 0;
   String label = "test";
   DateTime time;
-  List<int> scheduledDays;
-  bool enabled;
-  String sound;
-  bool vibrationChecked;
-  bool syncWithMindr;
+  List<int> scheduledDays = [];
+  bool enabled = true;
+  String sound = '';
+  bool vibrationChecked = true;
+  bool syncWithMindr = false;
 
   bool isExpanded = false;
 

@@ -1,11 +1,9 @@
 import 'dart:convert';
 
-import 'package:mindr.alarm/src/models/alarmEntity.dart';
-
 class AlarmActionOnPush {
   final String? userId;
   final String? actionType;
-  final AlarmEntity alarm;
+  final AlarmOnPush alarm;
 
   AlarmActionOnPush({
     required this.userId,
@@ -25,7 +23,7 @@ class AlarmActionOnPush {
     return AlarmActionOnPush(
       userId: map['user_id'],
       actionType: map['action_type'],
-      alarm: AlarmEntity.fromMap(map['alarm']),
+      alarm: AlarmOnPush.fromMap(json.decode(map['alarm'])),
     );
   }
 
@@ -33,4 +31,46 @@ class AlarmActionOnPush {
 
   factory AlarmActionOnPush.fromJson(String source) =>
       AlarmActionOnPush.fromMap(json.decode(source));
+}
+
+class AlarmOnPush {
+  AlarmOnPush(
+    this.id,
+    this.time,
+    this.label,
+    this.scheduledDays,
+    this.sound,
+    this.vibrationChecked,
+  );
+
+  int id;
+  String label = "test";
+  DateTime time;
+  List<int> scheduledDays;
+  String sound;
+  bool vibrationChecked;
+
+  bool isExpanded = false;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'time': time.toIso8601String(),
+      'label': label,
+      'scheduled_days': scheduledDays,
+      'sound': sound,
+      'vibration_checked': vibrationChecked
+    };
+  }
+
+  factory AlarmOnPush.fromMap(Map<String, dynamic> map) {
+    return AlarmOnPush(
+      map['id'],
+      DateTime.parse(map['time']),
+      map['label'],
+      List<int>.from(map['scheduled_days'] ?? []),
+      map['sound'],
+      map['vibration_checked'],
+    );
+  }
 }

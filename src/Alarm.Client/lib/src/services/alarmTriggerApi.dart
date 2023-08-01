@@ -17,14 +17,6 @@ import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';
 import 'alarmNotificationApi.dart';
 
-// The callback function should always be a top-level function.
-@pragma('vm:entry-point')
-void handleAlarmTriggeredTask() {
-  FlutterForegroundTask.setTaskHandler(AlarmForegroundTriggeredTaskHandler());
-  // // The setTaskHandler function must be called to handle the task in the background.
-  // FlutterForegroundTask.setTaskHandler(AlarmTaskHandler());
-}
-
 class AlarmTriggerApi {
   @pragma('vm:entry-point')
   static Future<bool> execute(int id, Map<String, dynamic> params) async {
@@ -38,6 +30,10 @@ class AlarmTriggerApi {
     // cancel the upcoming alarm notification
     AlarmNotificationApi.cancelUpcomingNotification(alarmItem.id);
 
+    if (await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+      // var permissions = await FlutterForegroundTask.checkNotificationPermission();
+      await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+    }
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         id: id,
@@ -77,13 +73,22 @@ class AlarmTriggerApi {
 
     // You can save data using the saveData function.
     await FlutterForegroundTask.saveData(key: 'alarmItemId', value: id);
-    await SharedPreferencesService.setActiveAlarmItemId(id);
+    await SharedPreferencesService.setActiveAlarm(id);
     return FlutterForegroundTask.startService(
       notificationTitle: 'Alarm',
       notificationText: body,
       callback: handleAlarmTriggeredTask,
     );
   }
+}
+
+// The callback function should always be a top-level function.
+@pragma('vm:entry-point')
+void handleAlarmTriggeredTask() {
+  FlutterForegroundTask.wakeUpScreen();
+  FlutterForegroundTask.setOnLockScreenVisibility(true);
+  FlutterForegroundTask.setTaskHandler(AlarmForegroundTriggeredTaskHandler());
+  FlutterForegroundTask.launchApp('/sampleWidget');
 }
 
 class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
@@ -97,9 +102,6 @@ class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
     _sendPort = sendPort;
     _alarmItemId =
         await FlutterForegroundTask.getData<int>(key: 'alarmItemId') as int;
-
-    FlutterForegroundTask.wakeUpScreen();
-    FlutterForegroundTask.setOnLockScreenVisibility(true);
 
     // Sound
     final session = await AudioSession.instance;
@@ -135,9 +137,6 @@ class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
       // Stop playback after 20 minutes
       await audioPlayer.stop();
     });
-
-    // // launch app
-    // FlutterForegroundTask.launchApp('${AlarmScreen.routeName}/$_alarmItemId');
   }
 
   // Called every [interval] milliseconds in [ForegroundTaskOptions].

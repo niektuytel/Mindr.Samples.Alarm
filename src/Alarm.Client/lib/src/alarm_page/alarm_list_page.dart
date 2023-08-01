@@ -174,15 +174,7 @@ class _AlarmListPageState extends State<AlarmListPage>
               selectedTime.minute,
             );
 
-            AlarmEntity newAlarm = AlarmEntity(
-              0, // Change to appropriate ID based on your requirements
-              time,
-              [], // Default days
-              true,
-              '', // Default sound
-              true, // Default vibrationChecked
-              true, // Default syncWithMindr
-            );
+            AlarmEntity newAlarm = AlarmEntity(time);
             setState(() {
               widget.items.add(newAlarm);
             });
@@ -247,9 +239,9 @@ class _AlarmListPageState extends State<AlarmListPage>
                                 var success =
                                     await SharedPreferencesService.setUserId(
                                         userId);
-                                await syncWithServer(userId);
                                 Navigator.of(context).pop();
                                 if (success) setState(() {});
+                                await syncWithServer(userId);
                               },
                             ),
                           ],

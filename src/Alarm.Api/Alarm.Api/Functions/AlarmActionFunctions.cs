@@ -40,6 +40,7 @@ public class AlarmActionFunctions
 
         _notificationService = notificationService;
     }
+
     [Function(nameof(Push))]
     public async Task<HttpResponseData> Push([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = $"{_tableName}/{nameof(Push)}")] HttpRequestData req)
     {
@@ -73,8 +74,11 @@ public class AlarmActionFunctions
             var body = string.IsNullOrEmpty(data.Alarm.Label) ? $"trigger at {data.Alarm.Time}" : $"'{data.Alarm.Label}' at {data.Alarm.Time}";
             entity.LatestCloudMessage = await _notificationService.SendNotificationAsync(userDevice.DeviceToken, title, body, data);
 
-            var result = await _tableClient.UpsertEntityAsync(entity);
-            response.StatusCode = (HttpStatusCode)result.Status;
+            _ = await _tableClient.UpsertEntityAsync(entity);
+
+            response.StatusCode = HttpStatusCode.OK;
+            response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+            await response.WriteStringAsync(JsonSerializer.Serialize(entity.LatestCloudMessage));
         }
         catch (Exception ex)
         {

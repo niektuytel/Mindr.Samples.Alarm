@@ -35,7 +35,7 @@ Future<void> notificationHandler(NotificationResponse response) async {
     return;
   }
 
-  await SharedPreferencesService.setActiveAlarmItemId(alarmItemId);
+  await SharedPreferencesService.setActiveAlarm(alarmItemId);
   if (openAlarmOnClick == true) {
     // Open the alarm screen, when app is in background.
     if (navigatorKey.currentState != null) {
@@ -87,6 +87,7 @@ class AlarmNotificationApi {
         importance: Importance.high,
         priority: Priority.high,
         showWhen: true,
+        fullScreenIntent: true,
         styleInformation: DefaultStyleInformation(true, true),
         ongoing: true,
         autoCancel: false,

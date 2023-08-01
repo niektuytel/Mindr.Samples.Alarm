@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:mindr.alarm/src/models/AlarmActionOnPush.dart';
+import 'package:mindr.alarm/src/models/alarmEntity.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
 import 'package:mindr.alarm/src/services/alarmNotificationApi.dart';
 import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
@@ -32,17 +33,16 @@ Future<void> _configureLocalTimeZone() async {
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await AlarmNotificationApi.init();
   await AndroidAlarmManager.initialize();
-
-  // // If you're going to use other Firebase services in the background, such as Firestore,
-  // // make sure you call `initializeApp` before using other Firebase services.
-  // await Firebase.initializeApp();
-
-  // TODO: update, create or delete alarm here based on the message data.
-  // This trigger comes from the database trigger on the server side.
-  // from background state, application is (not running)/killed
+  await _configureLocalTimeZone();
 
   print(
       "Handling a background message: ${message.messageId} data: ${message.toMap()}");
+
+  var alarmOnPush = AlarmActionOnPush.fromMap(message.data);
+
+  if (alarmOnPush.actionType == 'create') {
+    AlarmManagerApi.insertAlarmOnPush(alarmOnPush.alarm);
+  }
 }
 
 // This trigger comes from the database trigger on the server side.
@@ -53,7 +53,7 @@ Future<void> _firebaseMessagingForegroundHandler(RemoteMessage message) async {
   var alarmOnPush = AlarmActionOnPush.fromMap(message.data);
 
   if (alarmOnPush.actionType == 'create') {
-    AlarmManagerApi.insertAlarm(alarmOnPush.alarm);
+    AlarmManagerApi.insertAlarmOnPush(alarmOnPush.alarm);
   }
 
   // TODO: update or delete alarm here based on the message data.
@@ -105,12 +105,32 @@ void main() async {
             pathElements.length > 2) {
           var alarmId = int.parse(pathElements[2]);
           return MaterialPageRoute(builder: (context) => AlarmScreen(alarmId));
+        } else if ('/${pathElements[1]}' == '/sampleWidget') {
+          var alarmId = int.parse(pathElements[2]);
+          return MaterialPageRoute(builder: (context) => SampleWidget());
         }
+
         return null;
       },
     ),
   );
 }
+
+class SampleWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Sample Widget'),
+      ),
+      body: Center(
+        child: Text('This is a sample widget'),
+      ),
+    );
+  }
+}
+
+
 
 // (NEW Features)
 // -
@@ -192,3 +212,4 @@ void main() async {
 // This is a very simplified view of the process, and actual implementation can get quite complex,
 //especially when you take into account things like token renewal, error handling, and storing tokens securely.
 //It's recommended to thoroughly understand the OIDC flow and best practices before implementing this in a production application.
+

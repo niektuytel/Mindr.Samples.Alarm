@@ -21,7 +21,7 @@ class SharedPreferencesService {
     return null;
   }
 
-  static Future<bool> setActiveAlarmItemId(int alarmItemId) async {
+  static Future<bool> setActiveAlarm(int alarmItemId) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.setInt("alarm_item_id", alarmItemId);
   }
