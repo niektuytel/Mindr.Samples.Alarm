@@ -1,4 +1,5 @@
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:flutter/services.dart';
 import 'package:mindr.alarm/src/models/AlarmActionOnPush.dart';
 import 'package:mindr.alarm/src/services/sqflite_service.dart';
 import 'package:flutter/cupertino.dart';
@@ -50,13 +51,14 @@ class AlarmManagerApi {
       return;
     }
 
-    var snoozingId = AlarmNotificationApi.getSnoozingId(alarm.id);
+    // cancel the upcoming alarm notification
+    var upcomingId = AlarmNotificationApi.getUpcomingId(id);
     alarm.time = DateTime.now().add(Duration(minutes: 10));
     debugPrint('Schedule alarm: ${alarm.toMap().toString()}');
 
     // show upcoming alarm notification
     await AlarmNotificationApi.showSnoozingNotification(
-        snoozingId, alarm.toMap());
+        upcomingId, alarm.toMap());
 
     // show alarm
     var isSuccess = await AndroidAlarmManager.oneShotAt(
@@ -74,6 +76,19 @@ class AlarmManagerApi {
     await FlutterForegroundTask.stopService();
   }
 
+  static const platform = MethodChannel('com.mindr.alarm/alarm_trigger');
+
+  static Future<void> setAlarm(DateTime triggerTime) async {
+    try {
+      await platform.invokeMethod('scheduleAlarm', {
+        'triggerTime': triggerTime.millisecondsSinceEpoch,
+      });
+    } on PlatformException catch (e) {
+      debugPrint('Error in scheduleAlarm: $e');
+      // handle error
+    }
+  }
+
   @pragma('vm:entry-point')
   static Future<bool> scheduleAlarm(AlarmEntity alarm) async {
     if (!alarm.enabled) {
@@ -81,6 +96,9 @@ class AlarmManagerApi {
       await stopAlarm(alarm.id);
       return false;
     }
+
+    // // show fulll screen intent
+    // await showFullScreenIntent();
 
     // show upcoming alarm notification
     debugPrint('Schedule alarm: ${alarm.toMap().toString()}');
@@ -101,15 +119,17 @@ class AlarmManagerApi {
 
     // show alarm
     var id = alarm.id;
-    var time = alarm.time;
-    isSuccess = await AndroidAlarmManager.oneShotAt(
-        time, id, AlarmTriggerApi.execute,
-        exact: true,
-        wakeup: true,
-        rescheduleOnReboot: true,
-        alarmClock: true,
-        allowWhileIdle: true,
-        params: alarm.toMap());
+    var time = DateTime.now().add(const Duration(seconds: 20));
+    // alarm.time;
+    await setAlarm(time);
+    // isSuccess = await AndroidAlarmManager.oneShotAt(
+    //     time, id, showFullScreenIntent, //AlarmTriggerApi.execute,
+    //     exact: true,
+    //     wakeup: true,
+    //     rescheduleOnReboot: true,
+    //     alarmClock: true,
+    //     allowWhileIdle: true,
+    //     params: alarm.toMap());
 
     debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
 
@@ -143,7 +163,7 @@ class AlarmManagerApi {
     await SqfliteService().updateAlarm(alarm);
 
     if (updateAlarmManager) {
-      cancelAllAlarmNotifications(alarm.id);
+      await cancelAllAlarmNotifications(alarm.id);
       return await AlarmManagerApi.scheduleAlarm(alarm);
     }
 
@@ -157,13 +177,8 @@ class AlarmManagerApi {
   }
 
   static Future cancelAllAlarmNotifications(int id) async {
-    // stop current alarm
     var upcomingId = AlarmNotificationApi.getUpcomingId(id);
     await AndroidAlarmManager.cancel(upcomingId);
     AlarmNotificationApi.cancel(upcomingId);
-
-    var snoozingId = AlarmNotificationApi.getSnoozingId(id);
-    await AndroidAlarmManager.cancel(snoozingId);
-    AlarmNotificationApi.cancel(snoozingId);
   }
 }

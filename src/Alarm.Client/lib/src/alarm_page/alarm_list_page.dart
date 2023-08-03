@@ -179,6 +179,12 @@ class _AlarmListPageState extends State<AlarmListPage>
               widget.items.add(newAlarm);
             });
 
+            // if (await FlutterForegroundTask.isIgnoringBatteryOptimizations ==
+            //     false) {
+            // var permissions = await FlutterForegroundTask.checkNotificationPermission();
+            // await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+            // }
+
             await AlarmManagerApi.insertAlarm(newAlarm);
           }
         },

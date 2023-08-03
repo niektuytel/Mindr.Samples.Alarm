@@ -105,29 +105,12 @@ void main() async {
             pathElements.length > 2) {
           var alarmId = int.parse(pathElements[2]);
           return MaterialPageRoute(builder: (context) => AlarmScreen(alarmId));
-        } else if ('/${pathElements[1]}' == '/sampleWidget') {
-          var alarmId = int.parse(pathElements[2]);
-          return MaterialPageRoute(builder: (context) => SampleWidget());
         }
 
         return null;
       },
     ),
   );
-}
-
-class SampleWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Sample Widget'),
-      ),
-      body: Center(
-        child: Text('This is a sample widget'),
-      ),
-    );
-  }
 }
 
 

@@ -5,7 +5,9 @@ import 'dart:ui';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
 import 'package:mindr.alarm/src/services/sqflite_service.dart';
@@ -30,10 +32,6 @@ class AlarmTriggerApi {
     // cancel the upcoming alarm notification
     AlarmNotificationApi.cancelUpcomingNotification(alarmItem.id);
 
-    if (await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
-      // var permissions = await FlutterForegroundTask.checkNotificationPermission();
-      await FlutterForegroundTask.requestIgnoreBatteryOptimization();
-    }
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         id: id,
@@ -88,7 +86,6 @@ void handleAlarmTriggeredTask() {
   FlutterForegroundTask.wakeUpScreen();
   FlutterForegroundTask.setOnLockScreenVisibility(true);
   FlutterForegroundTask.setTaskHandler(AlarmForegroundTriggeredTaskHandler());
-  FlutterForegroundTask.launchApp('/sampleWidget');
 }
 
 class AlarmForegroundTriggeredTaskHandler extends TaskHandler {

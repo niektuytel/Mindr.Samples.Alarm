@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
@@ -87,7 +88,6 @@ class AlarmNotificationApi {
         importance: Importance.high,
         priority: Priority.high,
         showWhen: true,
-        fullScreenIntent: true,
         styleInformation: DefaultStyleInformation(true, true),
         ongoing: true,
         autoCancel: false,
@@ -149,9 +149,9 @@ class AlarmNotificationApi {
     return (id * 1234);
   }
 
-  static int getSnoozingId(int id) {
-    return (id * 1235);
-  }
+  // static int getSnoozingId(int id) {
+  //   return (id * 1235);
+  // }
 
   @pragma('vm:entry-point')
   static Future showUpcomingNotification(
@@ -174,6 +174,68 @@ class AlarmNotificationApi {
     await _notification.show(upcomingId, title, body, details,
         payload: payload);
   }
+
+  // @pragma('vm:entry-point')
+  // static Future<void> showTriggeredFullScreenNotification() async {
+  //   // const AndroidNotificationDetails androidPlatformChannelSpecifics =
+  //   //     AndroidNotificationDetails(
+  //   //         'your channel id', 'your channel name', 'your channel description',
+  //   //         importance: Importance.high,
+  //   //         priority: Priority.high,
+  //   //         fullScreenIntent: true,
+  //   //         ticker: 'ticker');
+
+  //   // const NotificationDetails platformChannelSpecifics =
+  //   //     NotificationDetails(android: androidPlatformChannelSpecifics);
+
+  //   // // Here you should replace 'FullScreenActivity' with the name of the activity you have defined
+  //   // final String bigPicturePath = await _downloadAndSaveFile(
+  //   //     'http://via.placeholder.com/800x800', 'bigPicture.jpg');
+  //   // final BigPictureStyleInformation bigPictureStyleInformation =
+  //   //     BigPictureStyleInformation(FilePathAndroidBitmap(bigPicturePath),
+  //   //         contentTitle: '<b>override <i>lines</i> of <u>text</u></b>',
+  //   //         htmlFormatContentTitle: true,
+  //   //         summaryText: 'summary <i>text</i>',
+  //   //         htmlFormatSummaryText: true);
+  //   // final AndroidNotificationDetails androidPlatformChannelSpecifics =
+  //   //     AndroidNotificationDetails('big text channel id',
+  //   //         'big text channel name', 'big text channel description',
+  //   //         styleInformation: bigPictureStyleInformation,
+  //   //         category: 'msg',
+  //   //         priority: Priority.high,
+  //   //         importance: Importance.high,
+  //   //         fullScreenIntent: true);
+  //   // final NotificationDetails platformChannelSpecifics =
+  //   //     NotificationDetails(android: androidPlatformChannelSpecifics);
+  //   // await flutterLocalNotificationsPlugin.show(
+  //   //     0, 'big text title', 'silent body', platformChannelSpecifics);
+
+  //   // await flutterLocalNotificationsPlugin.show(
+  //   //   0,
+  //   //   'plain title',
+  //   //   'plain body',
+  //   //   platformChannelSpecifics,
+  //   //   payload: 'item x',
+  //   // );
+
+  //   // await AlarmNotificationApi.init();
+  //   var alarmItem = AlarmEntity.fromMap(params);
+
+  //   if (alarmItem.enabled == false) {
+  //     return false;
+  //   }
+
+  //   var title = "Upcoming alarm";
+  //   var body = _getBody(alarmItem.label, alarmItem.time);
+  //   final details = _getUpcomingDetails();
+  //   var payload = jsonEncode({
+  //     'alarm_id': alarmItem.id,
+  //     'open_alarm_onclick': true,
+  //   });
+
+  //   await _notification.show(upcomingId, title, body, details,
+  //       payload: payload);
+  // }
 
   @pragma('vm:entry-point')
   static Future showSnoozingNotification(
@@ -204,9 +266,9 @@ class AlarmNotificationApi {
     await _notification.cancel(getUpcomingId(id));
   }
 
-  static void cancelSnoozingNotification(int id) async {
-    await _notification.cancel(getSnoozingId(id));
-  }
+  // static void cancelSnoozingNotification(int id) async {
+  //   await _notification.cancel(getSnoozingId(id));
+  // }
 
   static void cancelAll() => _notification.cancelAll();
 }
