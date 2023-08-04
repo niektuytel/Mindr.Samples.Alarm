@@ -7,33 +7,32 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.mindr.alarm.models.AlarmEntity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class AlarmService : Service() {
-    private var alarmEntity: AlarmEntity? = null
-    private var alarmJson: String? = null
     private var mediaPlayer: MediaPlayer? = null
     private val CHANNEL_ID = "com.mindr.alarm/firing_alarm_service_channel"
+
+    private val gson = Gson()
+    private val mapType = object: TypeToken<Map<String, Any>>() {}.type
+    private lateinit var alarmJson: String;
+    private lateinit var alarmEntity: AlarmEntity;
 
     override fun onCreate() {
         super.onCreate()
         initializeNotificationChannel()
 
-        // Then start the activity
-        val intentToFullScreenActivity = Intent(this, FullscreenActivity::class.java)
-        intentToFullScreenActivity.putExtra("EXTRA_ALARM_JSON", alarmJson)
-        intentToFullScreenActivity.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        this.startActivity(intentToFullScreenActivity)
     }
 
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        val gson = Gson()
-        alarmJson = intent.getStringExtra("EXTRA_ALARM_JSON")
-        alarmEntity = gson.fromJson(alarmJson, AlarmEntity::class.java)
+        alarmJson = intent.getStringExtra("EXTRA_ALARM_JSON")!!
+        val alarmMap: Map<String, Any> = gson.fromJson(alarmJson, mapType)
+        alarmEntity = AlarmEntity.fromMap(alarmMap)
         println("AlarmService.alarmJson: $alarmJson")
 
         mediaPlayer = MediaPlayer.create(this, R.raw.argon) // Replace argon with your sound file
@@ -42,7 +41,7 @@ class AlarmService : Service() {
 
         // Create notification here
         val notification = createNotification()
-        startForeground(alarmEntity?.id!!, notification)
+        startForeground(alarmEntity.id, notification)
 
         return START_STICKY
     }
@@ -80,10 +79,14 @@ class AlarmService : Service() {
         val snoozePendingIntent: PendingIntent = PendingIntent.getBroadcast(this, 0, snoozeIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val dismissPendingIntent: PendingIntent = PendingIntent.getBroadcast(this, 1, dismissIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
-
-
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+        val fullscreenIntent = Intent(this, FullscreenActivity::class.java)
+        fullscreenIntent.putExtra("EXTRA_ALARM_JSON", alarmJson)
+        fullscreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val fullscreenPendingIntent = PendingIntent.getActivity(this, 0, fullscreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
 
         val snoozeAction = NotificationCompat.Action.Builder(0, "Snooze", snoozePendingIntent).build()
         val dismissAction = NotificationCompat.Action.Builder(0, "Stop", dismissPendingIntent).build()
@@ -92,6 +95,7 @@ class AlarmService : Service() {
                 .setContentText(getBody())
                 .setSmallIcon(R.drawable.launch_background)
                 .setContentIntent(pendingIntent)
+                .setFullScreenIntent(fullscreenPendingIntent, true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .addAction(snoozeAction)
                 .addAction(dismissAction)
@@ -99,19 +103,15 @@ class AlarmService : Service() {
 
     }
 
-    fun formatDateTimeAsDay(dateTime: Date): String {
-        val sdf = SimpleDateFormat("EEE h:mm a")
-        return sdf.format(dateTime)
-    }
     private fun getBody(): String {
         // Convert ISO 8601 string to Date
-        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
-        val date: Date = format.parse(alarmEntity?.time!!) as Date
+        val sdf = SimpleDateFormat("EEE h:mm a", Locale.US)
+        val date = sdf.format(alarmEntity.time)
 
-        return if (alarmEntity?.label?.isEmpty() == false) {
-            "${formatDateTimeAsDay(date)} - ${alarmEntity?.label}"
+        return if (alarmEntity.label.isNotEmpty()) {
+            "$date - ${alarmEntity.label}"
         } else {
-            formatDateTimeAsDay(date)
+            date
         }
     }
 }

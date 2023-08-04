@@ -19,7 +19,8 @@ class AlarmEntity {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'time': time.toIso8601String().split('.')[0], // removes microseconds
+      'time':
+          '${time.toIso8601String().split('.')[0]}Z', // Append 'Z' for UTC timezone + removes microseconds
       'label': label,
       'scheduledDays':
           scheduledDays.join(','), // Convert list to comma-separated string

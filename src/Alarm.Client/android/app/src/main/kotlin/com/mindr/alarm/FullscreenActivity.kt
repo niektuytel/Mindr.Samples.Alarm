@@ -22,6 +22,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.mindr.alarm.AlarmService
 import com.mindr.alarm.R
@@ -31,8 +32,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 class FullscreenActivity : AppCompatActivity() {
-    private var alarmEntity: AlarmEntity? = null
-    private var alarmJson: String? = null
+    private lateinit var finishReceiver: BroadcastReceiver
     private val dismissReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == "com.mindr.alarm.action.DISMISS") {
@@ -40,6 +40,11 @@ class FullscreenActivity : AppCompatActivity() {
             }
         }
     }
+
+    private val gson = Gson()
+    private val mapType = object: TypeToken<Map<String, Any>>() {}.type
+    private lateinit var alarmJson: String;
+    private lateinit var alarmEntity: AlarmEntity;
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,15 +59,16 @@ class FullscreenActivity : AppCompatActivity() {
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                     WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
             )
         }
 
-        val gson = Gson()
-        alarmJson = intent.getStringExtra("EXTRA_ALARM_JSON")
-        alarmEntity = gson.fromJson(alarmJson, AlarmEntity::class.java)
+        alarmJson = intent.getStringExtra("EXTRA_ALARM_JSON")!!
+        val alarmMap: Map<String, Any> = gson.fromJson(alarmJson, mapType)
+        alarmEntity = AlarmEntity.fromMap(alarmMap)
         println("FullscreenActivity.alarmJson: $alarmJson")
 
         setContentView(R.layout.activity_fullscreen)
@@ -82,7 +88,7 @@ class FullscreenActivity : AppCompatActivity() {
         tvCurrentTime.text = org.threeten.bp.LocalDateTime.now().format(formatter)
 
         // Display alarm label
-        alarmLabel.text = alarmEntity?.label
+        alarmLabel.text = alarmEntity.label
 
         val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = "SNOOZE_ACTION"
@@ -134,6 +140,16 @@ class FullscreenActivity : AppCompatActivity() {
             }
         }
 
+        // Initialize and register finishReceiver
+        finishReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == "com.mindr.alarm.ACTION_FINISH") {
+                    finish()
+                }
+            }
+        }
+        registerReceiver(finishReceiver, IntentFilter("com.mindr.alarm.ACTION_FINISH"))
+
     }
 
 
@@ -151,6 +167,7 @@ class FullscreenActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(dismissReceiver)
+        unregisterReceiver(finishReceiver)
     }
 
 }
