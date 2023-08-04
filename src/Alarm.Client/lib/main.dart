@@ -7,7 +7,7 @@ import 'package:mindr.alarm/src/models/alarmEntity.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
 import 'package:mindr.alarm/src/services/alarmNotificationApi.dart';
 import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
-import 'package:mindr.alarm/src/alarm_page/alarm_screen.dart';
+// import 'package:mindr.alarm/src/alarm_page/alarm_screen.dart';
 import 'package:mindr.alarm/src/alarm_page/alarm_list_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -81,9 +81,9 @@ void main() async {
   print("main >> ${alarmItemId}");
 
   String initialRoute = AlarmListPage.routeName;
-  if (alarmItemId != null) {
-    initialRoute = '${AlarmScreen.routeName}/$alarmItemId';
-  }
+  // if (alarmItemId != null) {
+  //   initialRoute = '${AlarmScreen.routeName}/$alarmItemId';
+  // }
 
   runApp(
     MaterialApp(
@@ -101,11 +101,12 @@ void main() async {
 
         if ('/${pathElements[1]}' == AlarmListPage.routeName) {
           return MaterialPageRoute(builder: (context) => AlarmListPage());
-        } else if ('/${pathElements[1]}' == AlarmScreen.routeName &&
-            pathElements.length > 2) {
-          var alarmId = int.parse(pathElements[2]);
-          return MaterialPageRoute(builder: (context) => AlarmScreen(alarmId));
         }
+        // else if ('/${pathElements[1]}' == AlarmScreen.routeName &&
+        //     pathElements.length > 2) {
+        //   var alarmId = int.parse(pathElements[2]);
+        //   return MaterialPageRoute(builder: (context) => AlarmScreen(alarmId));
+        // }
 
         return null;
       },

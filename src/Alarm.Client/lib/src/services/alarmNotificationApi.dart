@@ -11,7 +11,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../main.dart';
-import '../alarm_page/alarm_screen.dart';
+// import '../alarm_page/alarm_screen.dart';
 import '../models/alarmEntity.dart';
 import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';
@@ -40,8 +40,8 @@ Future<void> notificationHandler(NotificationResponse response) async {
   if (openAlarmOnClick == true) {
     // Open the alarm screen, when app is in background.
     if (navigatorKey.currentState != null) {
-      await navigatorKey.currentState!
-          .pushNamed('${AlarmScreen.routeName}/$alarmItemId');
+      // await navigatorKey.currentState!
+      //     .pushNamed('${AlarmScreen.routeName}/$alarmItemId');
     }
   }
 }

@@ -13,7 +13,6 @@ import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
 import 'package:mindr.alarm/src/services/sqflite_service.dart';
 import 'package:vibration/vibration.dart';
 
-import '../alarm_page/alarm_screen.dart';
 import '../models/alarmEntity.dart';
 import '../utils/datetimeUtils.dart';
 import 'alarmManagerApi.dart';
@@ -184,6 +183,6 @@ class AlarmForegroundTriggeredTaskHandler extends TaskHandler {
   @override
   void onNotificationPressed() async {
     print('onNotificationPressed >> $_alarmItemId');
-    FlutterForegroundTask.launchApp('${AlarmScreen.routeName}/$_alarmItemId');
+    // FlutterForegroundTask.launchApp('${AlarmScreen.routeName}/$_alarmItemId');
   }
 }

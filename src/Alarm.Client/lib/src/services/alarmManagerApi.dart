@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:mindr.alarm/src/models/AlarmActionOnPush.dart';
@@ -77,11 +79,11 @@ class AlarmManagerApi {
   }
 
   static const platform = MethodChannel('com.mindr.alarm/alarm_trigger');
-
-  static Future<void> setAlarm(DateTime triggerTime) async {
+  static Future<void> setAlarm(AlarmEntity alarm) async {
     try {
+      print('setAlarm: ${jsonEncode(alarm.toMap())}');
       await platform.invokeMethod('scheduleAlarm', {
-        'triggerTime': triggerTime.millisecondsSinceEpoch,
+        'alarm': jsonEncode(alarm.toMap()),
       });
     } on PlatformException catch (e) {
       debugPrint('Error in scheduleAlarm: $e');
@@ -119,9 +121,9 @@ class AlarmManagerApi {
 
     // show alarm
     var id = alarm.id;
-    var time = DateTime.now().add(const Duration(seconds: 20));
+    alarm.time = DateTime.now().add(const Duration(seconds: 20));
     // alarm.time;
-    await setAlarm(time);
+    await setAlarm(alarm);
     // isSuccess = await AndroidAlarmManager.oneShotAt(
     //     time, id, showFullScreenIntent, //AlarmTriggerApi.execute,
     //     exact: true,

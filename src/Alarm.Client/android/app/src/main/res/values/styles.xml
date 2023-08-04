@@ -16,6 +16,12 @@
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 
+    <style name="NoActionBar" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+
     <style name="Widget.Theme.Android.ActionBar.Fullscreen" parent="Widget.AppCompat.ActionBar">
         <item name="android:background">@color/black_overlay</item>
     </style>
