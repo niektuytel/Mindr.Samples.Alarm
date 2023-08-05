@@ -102,26 +102,26 @@ class AlarmManagerApi {
     // // show fulll screen intent
     // await showFullScreenIntent();
 
-    // show upcoming alarm notification
-    debugPrint('Schedule alarm: ${alarm.toMap().toString()}');
-    var upcomingId = AlarmNotificationApi.getUpcomingId(alarm.id);
-    var upcomingTime = alarm.time.subtract(Duration(hours: 2));
-    var isSuccess = await AndroidAlarmManager.oneShotAt(
-        upcomingTime, upcomingId, AlarmNotificationApi.showUpcomingNotification,
-        exact: true,
-        wakeup: true,
-        rescheduleOnReboot: true,
-        alarmClock: true,
-        allowWhileIdle: true,
-        params: alarm.toMap());
+    // // show upcoming alarm notification
+    // debugPrint('Schedule alarm: ${alarm.toMap().toString()}');
+    // var upcomingId = AlarmNotificationApi.getUpcomingId(alarm.id);
+    // var upcomingTime = alarm.time.subtract(Duration(hours: 2));
+    // var isSuccess = await AndroidAlarmManager.oneShotAt(
+    //     upcomingTime, upcomingId, AlarmNotificationApi.showUpcomingNotification,
+    //     exact: true,
+    //     wakeup: true,
+    //     rescheduleOnReboot: true,
+    //     alarmClock: true,
+    //     allowWhileIdle: true,
+    //     params: alarm.toMap());
 
-    debugPrint(isSuccess
-        ? 'Upcoming alarm set successfully'
-        : 'Failed to set upcoming alarm');
+    // debugPrint(isSuccess
+    //     ? 'Upcoming alarm set successfully'
+    //     : 'Failed to set upcoming alarm');
 
     // show alarm
     var id = alarm.id;
-    alarm.time = DateTime.now().add(const Duration(seconds: 20));
+    // alarm.time = DateTime.now().add(const Duration(seconds: 20));
     // alarm.time;
     await setAlarm(alarm);
     // isSuccess = await AndroidAlarmManager.oneShotAt(
@@ -133,9 +133,10 @@ class AlarmManagerApi {
     //     allowWhileIdle: true,
     //     params: alarm.toMap());
 
-    debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
+    // debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
 
-    return isSuccess;
+    return true;
+    //isSuccess;
   }
 
   @pragma('vm:entry-point')
