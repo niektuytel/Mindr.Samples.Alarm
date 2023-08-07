@@ -5,7 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:mindr.alarm/src/models/AlarmActionOnPush.dart';
 import 'package:mindr.alarm/src/models/alarmEntity.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
-import 'package:mindr.alarm/src/services/alarmNotificationApi.dart';
+// import 'package:mindr.alarm/src/services/alarmNotificationApi.dart';
 import 'package:mindr.alarm/src/services/shared_preferences_service.dart';
 // import 'package:mindr.alarm/src/alarm_page/alarm_screen.dart';
 import 'package:mindr.alarm/src/alarm_page/alarm_list_page.dart';
@@ -31,8 +31,8 @@ Future<void> _configureLocalTimeZone() async {
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await AlarmNotificationApi.init();
-  await AndroidAlarmManager.initialize();
+  // await AlarmNotificationApi.init();
+  // await AndroidAlarmManager.initialize();
   await _configureLocalTimeZone();
 
   print(
@@ -61,8 +61,8 @@ Future<void> _firebaseMessagingForegroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AlarmNotificationApi.init();
-  await AndroidAlarmManager.initialize();
+  // await AlarmNotificationApi.init();
+  // await AndroidAlarmManager.initialize();
   await _configureLocalTimeZone();
 
   // Used for MINDR database sync:

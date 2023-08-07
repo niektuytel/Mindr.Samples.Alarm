@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/services.dart';
@@ -9,93 +10,108 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 import '../models/alarmEntity.dart';
 import '../utils/datetimeUtils.dart';
-import 'alarmTriggerApi.dart';
-import 'alarmNotificationApi.dart';
 
 class AlarmManagerApi {
-  @pragma('vm:entry-point')
-  static Future stopAlarm(int id) async {
-    try {
-      SqfliteService dbHelper = SqfliteService();
-      AlarmEntity? alarm = await dbHelper.getAlarm(id);
-
-      if (alarm == null) {
-        debugPrint('No alarm found with id: $id');
-        return null;
-      }
-      debugPrint('Stopping alarm: ${alarm.toMap().toString()}');
-
-      // stop current notification
-      await cancelAllAlarmNotifications(alarm.id);
-      if (alarm.scheduledDays.isNotEmpty && alarm.enabled) {
-        // set next alarm
-        alarm = await DateTimeUtils.setNextItemTime(alarm, alarm.time);
-
-        await dbHelper.updateAlarm(alarm);
-        await scheduleAlarm(alarm);
-      }
-
-      // cancel the alarm
-      await FlutterForegroundTask.stopService();
-    } catch (e) {
-      debugPrint('Error in stopAlarm: $e');
-    }
-  }
-
-  @pragma('vm:entry-point')
-  static Future snoozeAlarm(int id) async {
-    SqfliteService dbHelper = SqfliteService();
-    AlarmEntity? alarm = await dbHelper.getAlarm(id);
-
-    if (alarm == null) {
-      debugPrint('Alarm is not enabled (id: $id). Cancelling...');
-      await stopAlarm(id);
-      return;
-    }
-
-    // cancel the upcoming alarm notification
-    var upcomingId = AlarmNotificationApi.getUpcomingId(id);
-    alarm.time = DateTime.now().add(Duration(minutes: 10));
-    debugPrint('Schedule alarm: ${alarm.toMap().toString()}');
-
-    // show upcoming alarm notification
-    await AlarmNotificationApi.showSnoozingNotification(
-        upcomingId, alarm.toMap());
-
-    // show alarm
-    var isSuccess = await AndroidAlarmManager.oneShotAt(
-        alarm.time, alarm.id, AlarmTriggerApi.execute,
-        exact: true,
-        wakeup: true,
-        rescheduleOnReboot: true,
-        alarmClock: true,
-        allowWhileIdle: true,
-        params: alarm.toMap());
-
-    debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
-
-    // cancel the alarm
-    await FlutterForegroundTask.stopService();
-  }
-
   static const platform = MethodChannel('com.mindr.alarm/alarm_trigger');
   static Future<void> setAlarm(AlarmEntity alarm) async {
-    try {
-      print('setAlarm: ${jsonEncode(alarm.toMap())}');
-      await platform.invokeMethod('scheduleAlarm', {
-        'alarm': jsonEncode(alarm.toMap()),
-      });
-    } on PlatformException catch (e) {
-      debugPrint('Error in scheduleAlarm: $e');
-      // handle error
+    if (Platform.isAndroid) {
+      try {
+        print('setAlarm: ${jsonEncode(alarm.toMap())}');
+        await platform.invokeMethod('scheduleAlarm', {
+          'alarm': jsonEncode(alarm.toMap()),
+        });
+      } on PlatformException catch (e) {
+        debugPrint('Error in scheduleAlarm: $e');
+        // handle error
+      }
+    } else {
+      throw new Exception(
+          'Not implemented platform ${Platform.operatingSystem}');
     }
   }
+
+  static Future<void> removeAlarm(int alarmId) async {
+    if (Platform.isAndroid) {
+      try {
+        print('remove alarm: ${alarmId}');
+        await platform.invokeMethod('removeAlarm', {
+          'id': alarmId.toString(),
+        });
+      } on PlatformException catch (e) {
+        debugPrint('Error in scheduleAlarm: $e');
+        // handle error
+      }
+    } else {
+      throw new Exception(
+          'Not implemented platform ${Platform.operatingSystem}');
+    }
+  }
+
+  // @pragma('vm:entry-point')
+  // static Future stopAlarm(int id) async {
+  //   try {
+  //     await removeAlarm(id);
+
+  //     SqfliteService dbHelper = SqfliteService();
+  //     AlarmEntity? alarm = await dbHelper.getAlarm(id);
+  //     if (alarm == null) {
+  //       debugPrint('No alarm found with id: $id');
+  //       return null;
+  //     }
+
+  //     // stop current notification
+  //     if (alarm.scheduledDays.isNotEmpty && alarm.enabled) {
+  //       debugPrint('Schedule alarm: ${alarm.toMap().toString()}');
+  //       alarm = await DateTimeUtils.setNextItemTime(alarm, alarm.time);
+  //       await dbHelper.updateAlarm(alarm);
+  //       await setAlarm(alarm);
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error in stopAlarm: $e');
+  //   }
+  // }
+
+  // @pragma('vm:entry-point')
+  // static Future snoozeAlarm(int id) async {
+  //   SqfliteService dbHelper = SqfliteService();
+  //   AlarmEntity? alarm = await dbHelper.getAlarm(id);
+
+  //   if (alarm == null) {
+  //     debugPrint('Alarm is not enabled (id: $id). Cancelling...');
+  //     await stopAlarm(id);
+  //     return;
+  //   }
+
+  //   // cancel the upcoming alarm notification
+  //   var upcomingId = AlarmNotificationApi.getUpcomingId(id);
+  //   alarm.time = DateTime.now().add(Duration(minutes: 10));
+  //   debugPrint('Schedule alarm: ${alarm.toMap().toString()}');
+
+  //   // show upcoming alarm notification
+  //   await AlarmNotificationApi.showSnoozingNotification(
+  //       upcomingId, alarm.toMap());
+
+  //   // show alarm
+  //   var isSuccess = await AndroidAlarmManager.oneShotAt(
+  //       alarm.time, alarm.id, AlarmTriggerApi.execute,
+  //       exact: true,
+  //       wakeup: true,
+  //       rescheduleOnReboot: true,
+  //       alarmClock: true,
+  //       allowWhileIdle: true,
+  //       params: alarm.toMap());
+
+  //   debugPrint(isSuccess ? 'Alarm set successfully' : 'Failed to set alarm');
+
+  //   // cancel the alarm
+  //   await FlutterForegroundTask.stopService();
+  // }
 
   @pragma('vm:entry-point')
   static Future<bool> scheduleAlarm(AlarmEntity alarm) async {
     if (!alarm.enabled) {
       debugPrint('Alarm is not enabled (id: ${alarm.id}). Cancelling...');
-      await stopAlarm(alarm.id);
+      await removeAlarm(alarm.id);
       return false;
     }
 
@@ -120,7 +136,7 @@ class AlarmManagerApi {
     //     : 'Failed to set upcoming alarm');
 
     // show alarm
-    var id = alarm.id;
+    // var id = alarm.id;
     // alarm.time = DateTime.now().add(const Duration(seconds: 20));
     // alarm.time;
     await setAlarm(alarm);
@@ -156,7 +172,7 @@ class AlarmManagerApi {
     alarm = await DateTimeUtils.setNextItemTime(alarm, DateTime.now());
     await SqfliteService().insertAlarm(alarm);
 
-    return await AlarmManagerApi.scheduleAlarm(alarm);
+    return await scheduleAlarm(alarm);
   }
 
   @pragma('vm:entry-point')
@@ -166,8 +182,9 @@ class AlarmManagerApi {
     await SqfliteService().updateAlarm(alarm);
 
     if (updateAlarmManager) {
-      await cancelAllAlarmNotifications(alarm.id);
-      return await AlarmManagerApi.scheduleAlarm(alarm);
+      // await cancelAllAlarmNotifications(alarm.id);
+      await removeAlarm(alarm.id);
+      return await scheduleAlarm(alarm);
     }
 
     return true;
@@ -175,13 +192,13 @@ class AlarmManagerApi {
 
   @pragma('vm:entry-point')
   static Future<void> deleteAlarm(int id) async {
-    await AlarmManagerApi.stopAlarm(id);
+    await removeAlarm(id);
     await SqfliteService().deleteAlarm(id);
   }
 
-  static Future cancelAllAlarmNotifications(int id) async {
-    var upcomingId = AlarmNotificationApi.getUpcomingId(id);
-    await AndroidAlarmManager.cancel(upcomingId);
-    AlarmNotificationApi.cancel(upcomingId);
-  }
+  // static Future cancelAllAlarmNotifications(int id) async {
+  //   var upcomingId = AlarmNotificationApi.getUpcomingId(id);
+  //   await AndroidAlarmManager.cancel(upcomingId);
+  //   AlarmNotificationApi.cancel(upcomingId);
+  // }
 }

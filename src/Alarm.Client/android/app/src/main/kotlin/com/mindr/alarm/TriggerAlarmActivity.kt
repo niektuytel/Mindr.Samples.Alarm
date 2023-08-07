@@ -3,12 +3,10 @@ package com.mindr.alarm
 import android.annotation.SuppressLint
 import android.app.KeyguardManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.view.MotionEvent
@@ -24,14 +22,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.jakewharton.threetenabp.AndroidThreeTen
-import com.mindr.alarm.AlarmService
-import com.mindr.alarm.R
 import com.mindr.alarm.models.AlarmEntity
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
-class FullscreenActivity : AppCompatActivity() {
+class TriggerAlarmActivity : AppCompatActivity() {
     private lateinit var finishReceiver: BroadcastReceiver
     private val dismissReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -86,6 +80,7 @@ class FullscreenActivity : AppCompatActivity() {
         // Display the current time
         val formatter = org.threeten.bp.format.DateTimeFormatter.ofPattern("hh:mm")
         tvCurrentTime.text = org.threeten.bp.LocalDateTime.now().format(formatter)
+
 
         // Display alarm label
         alarmLabel.text = alarmEntity.label

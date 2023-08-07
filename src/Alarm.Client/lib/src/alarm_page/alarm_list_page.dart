@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
 import '../models/alarmEntity.dart';
-import '../services/alarmNotificationApi.dart';
 import '../services/shared_preferences_service.dart';
 import '../services/sqflite_service.dart';
 import '../utils/datetimeUtils.dart';

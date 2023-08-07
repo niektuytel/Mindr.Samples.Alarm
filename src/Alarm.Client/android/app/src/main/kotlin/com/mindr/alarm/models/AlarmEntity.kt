@@ -1,12 +1,12 @@
 package com.mindr.alarm.models
 
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 
 data class AlarmEntity(
         val id: Int,
-        var time: Date,
+        var time: Calendar,
         val label: String,
         val scheduledDays: String,
         val isEnabled: Int,
@@ -18,9 +18,11 @@ data class AlarmEntity(
         val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
 
         fun fromMap(map: Map<String, Any>): AlarmEntity {
+            val calendar = Calendar.getInstance()
+            calendar.time = dateFormat.parse(map["time"] as String) ?: Calendar.getInstance().time
             return AlarmEntity(
                     id = (map["id"] as Double).toInt(),
-                    time = dateFormat.parse(map["time"] as String) ?: Date(),
+                    time = calendar,
                     label = map["label"] as String,
                     scheduledDays = map["scheduledDays"] as String,
                     isEnabled = (map["isEnabled"] as Double).toInt(),
@@ -29,13 +31,12 @@ data class AlarmEntity(
                     syncWithMindr = (map["syncWithMindr"] as Double).toInt()
             )
         }
-
     }
 
     fun toMap(): Map<String, Any> {
         return mapOf(
                 "id" to id,
-                "time" to dateFormat.format(time),
+                "time" to dateFormat.format(time.time),
                 "label" to label,
                 "scheduledDays" to scheduledDays,
                 "isEnabled" to isEnabled,
@@ -45,4 +46,3 @@ data class AlarmEntity(
         )
     }
 }
-

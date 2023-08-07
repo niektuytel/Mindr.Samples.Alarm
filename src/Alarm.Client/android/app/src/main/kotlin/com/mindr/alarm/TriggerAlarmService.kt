@@ -9,13 +9,13 @@ import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.mindr.alarm.models.AlarmEntity
+import com.mindr.alarm.utils.DateTimeUtils
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
-class AlarmService : Service() {
+class TriggerAlarmService : Service() {
     private var mediaPlayer: MediaPlayer? = null
-    private val CHANNEL_ID = "com.mindr.alarm/firing_alarm_service_channel"
+    private val CHANNEL_ID = "com.mindr.alarm/firing_alarms_channel_id"
 
     private val gson = Gson()
     private val mapType = object: TypeToken<Map<String, Any>>() {}.type
@@ -33,7 +33,7 @@ class AlarmService : Service() {
         alarmJson = intent.getStringExtra("EXTRA_ALARM_JSON")!!
         val alarmMap: Map<String, Any> = gson.fromJson(alarmJson, mapType)
         alarmEntity = AlarmEntity.fromMap(alarmMap)
-        println("AlarmService.alarmJson: $alarmJson")
+        println("TriggerAlarmService.alarmJson: $alarmJson")
 
         mediaPlayer = MediaPlayer.create(this, R.raw.argon) // Replace argon with your sound file
         mediaPlayer?.isLooping = true
@@ -62,8 +62,9 @@ class AlarmService : Service() {
                     "Firing alarms",
                     NotificationManager.IMPORTANCE_HIGH
             )
+            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC // Ensure visibility on lock screen
             val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannel(channel)
+            manager.createNotificationChannel(channel)
         }
     }
 
@@ -82,7 +83,7 @@ class AlarmService : Service() {
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
-        val fullscreenIntent = Intent(this, FullscreenActivity::class.java)
+        val fullscreenIntent = Intent(this, TriggerAlarmActivity::class.java)
         fullscreenIntent.putExtra("EXTRA_ALARM_JSON", alarmJson)
         fullscreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val fullscreenPendingIntent = PendingIntent.getActivity(this, 0, fullscreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -92,26 +93,18 @@ class AlarmService : Service() {
         val dismissAction = NotificationCompat.Action.Builder(0, "Stop", dismissPendingIntent).build()
         return NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Alarm")
-                .setContentText(getBody())
+                .setContentText(DateTimeUtils.getBody(alarmEntity))
                 .setSmallIcon(R.drawable.launch_background)
                 .setContentIntent(pendingIntent)
                 .setFullScreenIntent(fullscreenPendingIntent, true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOngoing(true)
+                .setAutoCancel(false)
                 .addAction(snoozeAction)
                 .addAction(dismissAction)
                 .build()
 
     }
 
-    private fun getBody(): String {
-        // Convert ISO 8601 string to Date
-        val sdf = SimpleDateFormat("EEE h:mm a", Locale.US)
-        val date = sdf.format(alarmEntity.time)
-
-        return if (alarmEntity.label.isNotEmpty()) {
-            "$date - ${alarmEntity.label}"
-        } else {
-            date
-        }
-    }
 }
