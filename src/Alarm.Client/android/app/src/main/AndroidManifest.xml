@@ -11,9 +11,9 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_RECURRING_ALARM" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" /><!--Newer versions of Android have increased restrictions on when apps can start activities from the background. For apps targeting Android 11 (API level 30) or higher, you cannot start an activity from the background unless the application has the-->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-
+<!--    CustomApplication / ${applicationName}-->
     <application
-        android:name="${applicationName}"
+        android:name=".CustomApplication"
         android:icon="@mipmap/ic_launcher"
         android:label="alarm"
         android:usesCleartextTraffic="true">

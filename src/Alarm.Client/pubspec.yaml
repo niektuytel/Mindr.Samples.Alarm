@@ -13,30 +13,25 @@ dependencies:
   flutter:
     sdk: flutter
   sqflite: any
-  path_provider: any
   get: ^4.1.4
   slidable_button: any
   flutter_isolate: any
-  android_alarm_manager_plus: any
-  flutter_ringtone_player: any
-  flutter_local_notifications: any
-  vibration: any
-  flutter_foreground_task: any
   shared_preferences: any
   device_info_plus: any
   flutter_timezone: any
-  just_audio: ^0.9.34
   intl: any
-  audio_session: any
   uuid: any
   get_it: any
   provider: any
+  timezone: any
   http: any
   path: any
+  path_provider: any
+  path_provider_android: any
+  path_provider_ios: any
   image: any
   flutter_localizations:
     sdk: flutter
-  alarm: ^1.1.5
   firebase_messaging: ^14.6.5
   firebase_core: ^2.15.0
 

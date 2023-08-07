@@ -4,10 +4,8 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
 import '../models/alarmEntity.dart';
 import '../services/shared_preferences_service.dart';
@@ -599,35 +597,35 @@ enum SyncStatus {
   notSynced, // Failed to sync with the server or haven't synced yet
 }
 
-Future<void> _requestPermissionForAndroid() async {
-  if (!Platform.isAndroid) {
-    return;
-  }
+// Future<void> _requestPermissionForAndroid() async {
+//   if (!Platform.isAndroid) {
+//     return;
+//   }
 
-  // // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
-  // // onNotificationPressed function to be called.
-  // //
-  // // When the notification is pressed while permission is denied,
-  // // the onNotificationPressed function is not called and the app opens.
-  // //
-  // // If you do not use the onNotificationPressed or launchApp function,
-  // // you do not need to write this code.
-  // if (!await FlutterForegroundTask.canDrawOverlays) {
-  //   // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
-  //   await FlutterForegroundTask.openSystemAlertWindowSettings();
-  // }
+//   // // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
+//   // // onNotificationPressed function to be called.
+//   // //
+//   // // When the notification is pressed while permission is denied,
+//   // // the onNotificationPressed function is not called and the app opens.
+//   // //
+//   // // If you do not use the onNotificationPressed or launchApp function,
+//   // // you do not need to write this code.
+//   // if (!await FlutterForegroundTask.canDrawOverlays) {
+//   //   // This function requires `android.permission.SYSTEM_ALERT_WINDOW` permission.
+//   //   await FlutterForegroundTask.openSystemAlertWindowSettings();
+//   // }
 
-  // Android 12 or higher, there are restrictions on starting a foreground service.
-  // To restart the service on device reboot or unexpected problem, you need to allow below permission.
-  if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
-    // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
-    await FlutterForegroundTask.requestIgnoreBatteryOptimization();
-  }
+//   // // Android 12 or higher, there are restrictions on starting a foreground service.
+//   // // To restart the service on device reboot or unexpected problem, you need to allow below permission.
+//   // if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+//   //   // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
+//   //   await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+//   // }
 
-  // Android 13 and higher, you need to allow notification permission to expose foreground service notification.
-  final NotificationPermission notificationPermissionStatus =
-      await FlutterForegroundTask.checkNotificationPermission();
-  if (notificationPermissionStatus != NotificationPermission.granted) {
-    await FlutterForegroundTask.requestNotificationPermission();
-  }
-}
+//   // // Android 13 and higher, you need to allow notification permission to expose foreground service notification.
+//   // final NotificationPermission notificationPermissionStatus =
+//   //     await FlutterForegroundTask.checkNotificationPermission();
+//   // if (notificationPermissionStatus != NotificationPermission.granted) {
+//   //   await FlutterForegroundTask.requestNotificationPermission();
+//   // }
+// }

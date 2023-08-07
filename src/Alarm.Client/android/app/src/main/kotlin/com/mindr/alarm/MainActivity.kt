@@ -1,36 +1,28 @@
 package com.mindr.alarm
 
+import android.content.Context
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.StandardMethodCodec
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.mindr.alarm/alarm_trigger"
 
-    override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
-        super.configureFlutterEngine(flutterEngine)
-
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            val alarmService = AlarmService.getInstance(applicationContext)
-            when (call.method) {
-                "scheduleAlarm" -> {
-                    val alarm: String = call.argument("alarm") ?: ""
-                    alarmService.scheduleAlarm(alarm)
-                    result.success(null)
-                }
-                "removeAlarm" -> {
-                    val id = call.argument<String>("id")?.toInt() ?: -1
-                    alarmService.stopTriggerService(id)
-                    alarmService.stopNotification(id)
-                    result.success(null)
-                }
-                else -> {
-                    result.notImplemented()
-                }
-            }
-        }
+    override fun provideFlutterEngine(context: Context): FlutterEngine? {
+        // Return the cached FlutterEngine from the CustomApplication setup
+        return FlutterEngineCache.getInstance().get("mindr_flutter_engine_id")
     }
-
-
+//
+//    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+//        val taskQueue =
+//                flutterPluginBinding.binaryMessenger.makeBackgroundTaskQueue()
+//        channel = MethodChannel(flutterPluginBinding.binaryMessenger,
+//                "com.example.foo",
+//                StandardMethodCodec.INSTANCE,
+//                taskQueue)
+//        channel.setMethodCallHandler(this)
+//    }
 }

@@ -94,7 +94,7 @@ class TriggerAlarmService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Alarm")
                 .setContentText(DateTimeUtils.getBody(alarmEntity))
-                .setSmallIcon(R.drawable.launch_background)
+                .setSmallIcon(R.drawable.ic_alarm)
                 .setContentIntent(pendingIntent)
                 .setFullScreenIntent(fullscreenPendingIntent, true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)

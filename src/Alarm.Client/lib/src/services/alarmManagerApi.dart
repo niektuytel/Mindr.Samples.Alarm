@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:mindr.alarm/src/models/AlarmActionOnPush.dart';
 import 'package:mindr.alarm/src/services/sqflite_service.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 import '../models/alarmEntity.dart';
 import '../utils/datetimeUtils.dart';

@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:mindr.alarm/src/models/AlarmActionOnPush.dart';
 import 'package:mindr.alarm/src/models/alarmEntity.dart';
@@ -14,11 +16,14 @@ import 'package:mindr.alarm/src/alarm_page/alarm_list_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:path_provider_android/path_provider_android.dart';
+import 'package:path_provider_ios/path_provider_ios.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
+const isolateName = 'alarm_isolate';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> _configureLocalTimeZone() async {
@@ -32,36 +37,18 @@ Future<void> _configureLocalTimeZone() async {
 }
 
 @pragma('vm:entry-point')
-Future<void> setAlarm(AlarmEntity alarm) async {
-  if (Platform.isAndroid) {
-    try {
-      debugPrint('setAlarm: ${jsonEncode(alarm.toMap())}');
-
-      // Use the same MethodChannel identifier as before.
-      const platform = MethodChannel('com.mindr.alarm/alarm_trigger');
-
-      await platform.invokeMethod('scheduleAlarm', {
-        'alarm': jsonEncode(alarm.toMap()),
-      });
-    } on PlatformException catch (e) {
-      debugPrint('Error in scheduleAlarm: $e');
-      // handle error
-    }
-  } else {
-    throw new Exception('Not implemented platform ${Platform.operatingSystem}');
-  }
-}
-
-@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   WidgetsFlutterBinding.ensureInitialized();
   await _configureLocalTimeZone();
+  // DartPluginRegistrant.ensureInitialized();
+  // if (Platform.isAndroid) PathProviderAndroid.registerWith();
+  // if (Platform.isIOS) PathProviderIOS.registerWith();
 
-  // Initialize the MethodChannel here
-  MethodChannel('com.mindr.alarm/alarm_trigger')
-      .setMethodCallHandler((call) async {
-    // Handle potential callbacks if needed.
-  });
+  // // Initialize the MethodChannel here
+  // MethodChannel('com.mindr.alarm/alarm_trigger')
+  //     .setMethodCallHandler((call) async {
+  //   // Handle potential callbacks if needed.
+  // });
 
   print(
       "Handling a background message: ${message.messageId} data: ${message.toMap()}");
@@ -75,7 +62,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     alarm.vibrationChecked = alarmOnPush.alarm.vibrationChecked;
     alarm.syncWithMindr = true;
 
-    await setAlarm(alarm);
+    // Serialize the AlarmEntity object and send it to the main isolate.
+    final sendPort = IsolateNameServer.lookupPortByName(isolateName);
+    sendPort?.send(json.encode(alarm.toMap()));
+
+    // Register the callback dispatcher for background execution
+    // final callback = PluginUtilities.getCallbackHandle(callbackDispatcher);
+    await callbackDispatcher(alarm);
+    // await AlarmManagerApi.setAlarm(alarm);
   }
 }
 
@@ -94,7 +88,16 @@ Future<void> _firebaseMessagingForegroundHandler(RemoteMessage message) async {
   // TODO: update or delete alarm here based on the message data.
 }
 
+void _isolateMain(RootIsolateToken rootIsolateToken) async {
+  BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
+  // SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+  print("_isolateMain");
+}
+
 void main() async {
+  RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+  Isolate.spawn(_isolateMain, rootIsolateToken);
+
   WidgetsFlutterBinding.ensureInitialized();
   // await AlarmNotificationApi.init();
   // await AndroidAlarmManager.initialize();
@@ -149,7 +152,20 @@ void main() async {
   );
 }
 
+@pragma('vm:entry-point')
+Future<void> callbackDispatcher(AlarmEntity alarm) async {
+  WidgetsFlutterBinding.ensureInitialized();
 
+  final data = jsonEncode(alarm.toMap()); //_background');
+
+  const MethodChannel _backgroundChannel =
+      MethodChannel('com.mindr.alarm/alarm_trigger');
+
+  print('callbackDispatcher data: $data');
+  await _backgroundChannel.invokeMethod('scheduleAlarm', {
+    'alarm': jsonEncode(alarm.toMap()),
+  });
+}
 
 // (NEW Features)
 // -
@@ -231,4 +247,3 @@ void main() async {
 // This is a very simplified view of the process, and actual implementation can get quite complex,
 //especially when you take into account things like token renewal, error handling, and storing tokens securely.
 //It's recommended to thoroughly understand the OIDC flow and best practices before implementing this in a production application.
-
