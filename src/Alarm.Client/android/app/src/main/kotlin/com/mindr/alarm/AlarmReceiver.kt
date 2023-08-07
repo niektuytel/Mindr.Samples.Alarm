@@ -22,6 +22,7 @@ class AlarmReceiver : BroadcastReceiver() {
     private lateinit var alarmEntity: AlarmEntity;
 
     override fun onReceive(context: Context, intent: Intent) {
+        val alarmService = AlarmService.getInstance(context)
         alarmJson = intent.getStringExtra("EXTRA_ALARM_JSON")!!
         val alarmMap: Map<String, Any> = gson.fromJson(alarmJson, mapType)
         alarmEntity = AlarmEntity.fromMap(alarmMap)
@@ -43,12 +44,12 @@ class AlarmReceiver : BroadcastReceiver() {
             }
             "SNOOZE_ACTION" -> {
                 // stop trigger + related alarm
-                MainActivity.stopTriggerService(context, alarmEntity.id)
-                MainActivity.stopNotification(context, alarmEntity.id)
+                alarmService.stopTriggerService(alarmEntity.id)
+                alarmService.stopNotification(alarmEntity.id)
 
                 // Set a alarm over 10 minutes
                 alarmEntity.time.add(Calendar.MINUTE, 10) // Add 10 minutes
-                MainActivity.setAlarmService(context, alarmEntity.time, "trigger alarm", alarmEntity)
+                alarmService.setAlarmService(alarmEntity.time, "trigger alarm", alarmEntity)
 
                 // show snoozed notification
                 alarmJson = gson.toJson(alarmEntity.toMap())
@@ -61,16 +62,16 @@ class AlarmReceiver : BroadcastReceiver() {
             }
             "DISMISS_ACTION" -> {
                 // stop trigger + related alarm
-                MainActivity.stopTriggerService(context, alarmEntity.id)
-                MainActivity.stopNotification(context, alarmEntity.id)
+                alarmService.stopTriggerService(alarmEntity.id)
+                alarmService.stopNotification(alarmEntity.id)
 
                 // Set a new notification if scheduledDays are set
                 if (alarmEntity.scheduledDays.isNotEmpty()) {
                     // Update alarm to next time
-                    alarmEntity = DateTimeUtils.setNextItemTime(alarmEntity, alarmEntity.time)
+                    alarmEntity = DateTimeUtils.setNextItemTime(alarmEntity, true)
                     alarmJson = gson.toJson(alarmEntity.toMap())
 
-                    MainActivity.scheduleAlarm(context, alarmJson)
+                    alarmService.scheduleAlarm(alarmJson)
                 }
             }
         }

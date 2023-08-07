@@ -18,23 +18,29 @@ class DateTimeUtils {
             }
         }
 
-        fun setNextItemTime(item: AlarmEntity, checkOnDateTime: Calendar): AlarmEntity {
+        fun setNextItemTime(item: AlarmEntity, ignoreToday: Boolean): AlarmEntity {
+            val nowTime = Calendar.getInstance()
             val nextTime = Calendar.getInstance()
-            nextTime.set(checkOnDateTime.get(Calendar.YEAR),
-                    checkOnDateTime.get(Calendar.MONTH),
-                    checkOnDateTime.get(Calendar.DAY_OF_MONTH),
+            nextTime.set(item.time.get(Calendar.YEAR),
+                    item.time.get(Calendar.MONTH),
+                    item.time.get(Calendar.DAY_OF_MONTH),
                     item.time.get(Calendar.HOUR_OF_DAY),
                     item.time.get(Calendar.MINUTE))
+
 
             if (item.isEnabled == 0) {
                 return item
             } else if (item.scheduledDays.isEmpty()) {
-                if (nextTime.before(checkOnDateTime)) {
+                if (nextTime.before(nowTime)) {
                     nextTime.add(Calendar.DAY_OF_MONTH, 1)
                 }
                 item.time = nextTime
                 println("Next time: ${item.time.time}")
                 return item
+            }
+
+            if (ignoreToday) {
+                nextTime.add(Calendar.DAY_OF_MONTH, 1)
             }
 
             // Assuming `scheduledDays` is a comma-separated list of integers as strings
@@ -48,7 +54,7 @@ class DateTimeUtils {
                 7 - dayOfWeek + nextDay
             }
 
-            if (scheduledDays.contains(dayOfWeek) && nextTime.after(checkOnDateTime)) {
+            if (scheduledDays.contains(dayOfWeek) && nextTime.after(nowTime) && !ignoreToday) {
                 item.time = nextTime
                 println("Next time: ${item.time.time} [nextDay: $nextDay, dayOfWeek: $dayOfWeek daysToAdd: $daysToAdd]")
                 return item
@@ -59,5 +65,6 @@ class DateTimeUtils {
             println("Next time: ${item.time.time} [nextDay: $nextDay, dayOfWeek: $dayOfWeek daysToAdd: $daysToAdd]")
             return item
         }
+
     }
 }

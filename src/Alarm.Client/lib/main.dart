@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/services.dart';
 import 'package:mindr.alarm/src/models/AlarmActionOnPush.dart';
 import 'package:mindr.alarm/src/models/alarmEntity.dart';
 import 'package:mindr.alarm/src/services/alarmManagerApi.dart';
@@ -30,28 +32,61 @@ Future<void> _configureLocalTimeZone() async {
 }
 
 @pragma('vm:entry-point')
+Future<void> setAlarm(AlarmEntity alarm) async {
+  if (Platform.isAndroid) {
+    try {
+      debugPrint('setAlarm: ${jsonEncode(alarm.toMap())}');
+
+      // Use the same MethodChannel identifier as before.
+      const platform = MethodChannel('com.mindr.alarm/alarm_trigger');
+
+      await platform.invokeMethod('scheduleAlarm', {
+        'alarm': jsonEncode(alarm.toMap()),
+      });
+    } on PlatformException catch (e) {
+      debugPrint('Error in scheduleAlarm: $e');
+      // handle error
+    }
+  } else {
+    throw new Exception('Not implemented platform ${Platform.operatingSystem}');
+  }
+}
+
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // await AlarmNotificationApi.init();
-  // await AndroidAlarmManager.initialize();
+  WidgetsFlutterBinding.ensureInitialized();
   await _configureLocalTimeZone();
+
+  // Initialize the MethodChannel here
+  MethodChannel('com.mindr.alarm/alarm_trigger')
+      .setMethodCallHandler((call) async {
+    // Handle potential callbacks if needed.
+  });
 
   print(
       "Handling a background message: ${message.messageId} data: ${message.toMap()}");
 
   var alarmOnPush = AlarmActionOnPush.fromMap(message.data);
-
   if (alarmOnPush.actionType == 'create') {
-    AlarmManagerApi.insertAlarmOnPush(alarmOnPush.alarm);
+    var alarm = AlarmEntity(alarmOnPush.alarm.time);
+    alarm.label = alarmOnPush.alarm.label;
+    alarm.scheduledDays = alarmOnPush.alarm.scheduledDays;
+    alarm.sound = alarmOnPush.alarm.sound;
+    alarm.vibrationChecked = alarmOnPush.alarm.vibrationChecked;
+    alarm.syncWithMindr = true;
+
+    await setAlarm(alarm);
   }
 }
 
 // This trigger comes from the database trigger on the server side.
 Future<void> _firebaseMessagingForegroundHandler(RemoteMessage message) async {
-  // I/flutter (19535): Handling a foreground message: 0:1690811792425069%6225845662258456
-  // data: {senderId: null, category: null, collapseKey: com.mindr.alarm, contentAvailable: false, data: {user_id: 79c0ff3d-32aa-445b-b9e5-330799cb03c1, action_type: create, alarm: {"scheduled_days":[1,2,3],"sound":"","vibration_checked":true,"id":1,"label":"test","time":"2023-07-29T12:34:56.789Z"}}, from: 978138716290, messageId: 0:1690811792425069%6225845662258456, messageType: null, mutableContent: false, notification: {title: New alarm, titleLocArgs: [], titleLocKey: null, body: 'test' at 07/29/2023 12:34:56, bodyLocArgs: [], bodyLocKey: null, android: {channelId: null, clickAction: null, color: null, count: null, imageUrl: null, link: null, priority: 0, smallIcon: null, sound: null, ticker: null, tag: null, visibility: 0}, apple: null, web: null}, sentTime: 1690811792397, threadId: null, ttl: 2419200}
-  print("Handle a foreground: ${message.messageId} data: ${message.toMap()}");
-  var alarmOnPush = AlarmActionOnPush.fromMap(message.data);
+  WidgetsFlutterBinding.ensureInitialized();
+  await _configureLocalTimeZone();
 
+  print("Handle a foreground: ${message.messageId} data: ${message.toMap()}");
+
+  var alarmOnPush = AlarmActionOnPush.fromMap(message.data);
   if (alarmOnPush.actionType == 'create') {
     AlarmManagerApi.insertAlarmOnPush(alarmOnPush.alarm);
   }
