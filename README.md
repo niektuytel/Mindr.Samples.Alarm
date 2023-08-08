@@ -23,4 +23,4 @@ With this functionality you can sync your alarm with an server where you can com
 #### Can been improved by solving following issues:
 - Can't trigger FCM to the custom native code as the MethodChannel is set on the foreground and not been set on the Background in android.
 - Show the full intent screen on the lock screen.
-- Add login security on the Alarm.Api + Alarm.Client (to get the userid from it)
+- Add login security on the Alarm.Api + Alarm.Client (to get the userid from it)  
