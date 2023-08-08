@@ -1,0 +1,108 @@
+{
+	"info": {
+		"_postman_id": "48893a1a-c62a-4122-8c73-0174a3d0f525",
+		"name": "Mindr.Samples.Alarm",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19391313"
+	},
+	"item": [
+		{
+			"name": "Test",
+			"item": [
+				{
+					"name": "Userdevice",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{AlarmBaseURL_Live}}/api/UserDevices/79c0ff3d-32aa-445b-b9e5-330799cb03c1",
+							"host": [
+								"{{AlarmBaseURL_Live}}"
+							],
+							"path": [
+								"api",
+								"UserDevices",
+								"79c0ff3d-32aa-445b-b9e5-330799cb03c1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Userdevice upsert",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"user_id\": \"79c0ff3d-32aa-445b-b9e5-330799cb03c1\",//test@test.com\r\n    \"device_token\": \"dADOmcDMQiSHiFRmVza9VF:APA91bGsEzJeJTmm-C5polnIvdBQRdNA63J0vgJrd6tZ9a1TXU8_kAUs-pAe7-tKPdqRJ5GMJd5CFgpy671oUkaeaKHXsy3PLzle5_f8a0-mN-33zXzLotSwGH-bdtq2DzLyJjgjUyWS\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{AlarmBaseURL_Local}}/api/UserDevices",
+							"host": [
+								"{{AlarmBaseURL_Local}}"
+							],
+							"path": [
+								"api",
+								"UserDevices"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Userdevice",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{AlarmBaseURL_Live}}/api/UserDevices/00c0ff3d-32aa-445b-b9e5-330799cb03c1",
+							"host": [
+								"{{AlarmBaseURL_Live}}"
+							],
+							"path": [
+								"api",
+								"UserDevices",
+								"00c0ff3d-32aa-445b-b9e5-330799cb03c1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Alarmactions Push",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"user_id\": \"79c0ff3d-32aa-445b-b9e5-330799cb03c1\",// test@test.com // required\r\n    \"action_type\": \"create\",// required\r\n    \"alarm\": {\r\n        \"id\": 1,\r\n        \"label\": \"test 2\",\r\n        \"time\": \"2023-08-08T00:09:00.000Z\",// required\r\n        \"scheduled_days\": [1, 2, 3, 4, 5, 6, 7],\r\n        \"sound\": \"\",\r\n        \"vibration_checked\": true\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{AlarmBaseURL_Live}}/api/alarmactions/push",
+							"host": [
+								"{{AlarmBaseURL_Live}}"
+							],
+							"path": [
+								"api",
+								"alarmactions",
+								"push"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
