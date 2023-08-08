@@ -36,7 +36,7 @@ class AlarmManagerApi {
         debugPrint('remove alarm: $alarmId');
         const platform = MethodChannel('com.mindr.alarm/alarm_trigger');
         await platform.invokeMethod('removeAlarm', {
-          'id': alarmId.toString(),
+          'id': alarmId,
         });
       } on PlatformException catch (e) {
         debugPrint('Error in scheduleAlarm: $e');

@@ -15,6 +15,7 @@ class MainActivity: FlutterActivity() {
         // Return the cached FlutterEngine from the CustomApplication setup
         return FlutterEngineCache.getInstance().get("mindr_flutter_engine_id")
     }
+
 //
 //    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
 //        val taskQueue =
